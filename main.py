@@ -10,6 +10,8 @@ import bcrypt
 from jose import jwt
 from datetime import datetime, timedelta
 from stockticker.schemas import UserSignup, UserLogin, StockTicker
+from email_validator import validate_email, EmailNotValidError
+
 
 ALPHA_VANTAGE_API_KEY = os.environ["ALPHA_VANTAGE_API_KEY"]
 EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
