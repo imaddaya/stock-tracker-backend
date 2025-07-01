@@ -11,7 +11,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or replace * with your frontend URL for safety
+    allow_origins=["*"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -19,12 +19,20 @@ app.add_middleware(
 
 EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
-TO_EMAIL = os.environ["TO_EMAIL"]
-
-app = FastAPI()
 
 portfolio = []
 
+def is_valid_ticker(ticker: str) -> bool:
+    url = f"https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
+    response = httpx.get(url)
+    data = response.json()
+    matches = data.get("bestMatches", [])
+    for match in matches:
+
+        if match.get("1. symbol", "").upper() == ticker.upper():
+            return True
+    return False
+    
 class StockTicker(BaseModel):
     ticker: str
 
@@ -35,8 +43,14 @@ def read_root():
 @app.post("/portfolio/add")
 def add_stock(stock: StockTicker):
     ticker = stock.ticker.upper()
+
+    # Check if ticker is valid first
+    if not is_valid_ticker(ticker):
+        raise HTTPException(status_code=400, detail="Ticker symbol does not exist")
+
     if ticker in portfolio:
         raise HTTPException(status_code=400, detail="Ticker already in portfolio")
+
     portfolio.append(ticker)
     return {"message": f"{ticker} added to portfolio", "portfolio": portfolio}
 
@@ -60,30 +74,25 @@ def get_portfolio_summary():
         return {"message": "Portfolio is empty", "summary": []}
 
     summary = []
-
     for ticker in portfolio:
         url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
-
         try:
             response = httpx.get(url)
             data = response.json()
             quote = data.get("Global Quote", {})
-
             if not quote:
                 summary.append({"ticker": ticker, "error": "No data returned"})
                 continue
-
             summary.append({
                 "ticker": quote.get("01. symbol", ticker),
                 "price": quote.get("05. price", "N/A"),
                 "change_percent": quote.get("10. change percent", "N/A")
             })
-
         except Exception as e:
             summary.append({"ticker": ticker, "error": str(e)})
 
     return {"summary": summary}
-    
+
 @app.get("/send-email")
 def send_email_report():
     if not portfolio:
@@ -103,13 +112,13 @@ def send_email_report():
     message = MIMEMultipart("alternative")
     message["Subject"] = "📊 Daily Stock Portfolio Summary"
     message["From"] = EMAIL_ADDRESS
-    message["To"] = TO_EMAIL
+    message["To"] = EMAIL_ADDRESS  # sends to your own email for now
     message.attach(MIMEText(html, "html"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_ADDRESS, TO_EMAIL, message.as_string())
-        return {"message": "Email sent successfully "}
+            server.sendmail(EMAIL_ADDRESS, EMAIL_ADDRESS, message.as_string())
+        return {"message": "Email sent successfully"}
     except Exception as e:
         return {"error": str(e)}
