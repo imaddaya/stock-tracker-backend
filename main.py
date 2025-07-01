@@ -2,23 +2,25 @@ import os
 import httpx
 import smtplib
 import json
-from fastapi import FastAPI, HTTPException
+import bcrypt
+from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi.middleware.cors import CORSMiddleware
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from fastapi.middleware.cors import CORSMiddleware
-import bcrypt
 from jose import jwt
+from jose.exceptions import JWTError, ExpiredSignatureError
 from datetime import datetime, timedelta
-from stockticker.schemas import UserSignup, UserLogin, StockTicker
+from stockticker.schemas import UserSignup, UserLogin, StockTicker, PasswordResetRequest, EmailSchema
 from email_validator import validate_email, EmailNotValidError
 
 
 ALPHA_VANTAGE_API_KEY = os.environ["ALPHA_VANTAGE_API_KEY"]
 EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
-JWT_SECRET = os.environ.get("JWT_SECRET", "your_jwt_secret_key")
+JWT_SECRET = os.environ["JWT_SECRET"]  
 JWT_ALGORITHM = "HS256"
 JWT_EXP_DELTA_MINUTES = 60
+REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
 
 USERS_FILE = "users.json"
 
@@ -65,6 +67,24 @@ def load_users():
 def save_users(users_dict):
     with open(USERS_FILE, "w") as f:
         json.dump(users_dict, f)
+
+def create_verification_token(email: str):
+    payload = {
+        "email": email,
+        "exp": datetime.utcnow() + timedelta(hours=24),  # token valid for 24 hours
+        "type": "email_verification"
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return token
+
+def create_password_reset_token(email: str):
+    payload = {
+        "email": email,
+        "exp": datetime.utcnow() + timedelta(hours=1),  # shorter expiry for reset
+        "type": "password_reset"
+    }
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return token
 
 portfolio = load_portfolio()
 
@@ -126,15 +146,45 @@ def get_portfolio_summary():
 
 @app.post("/signup")
 def signup(user: UserSignup):
+    try:
+        valid = validate_email(user.email)
+        user.email = valid.email  
+    except EmailNotValidError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     users = load_users()
     if user.email in users:
         raise HTTPException(status_code=400, detail="User already exists")
-
     hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-    users[user.email] = {"password": hashed_pw}
+    users[user.email] = {
+        "password": hashed_pw,
+        "is_verified": False  
+    }
     save_users(users)
+    
+    token = create_verification_token(user.email)
+    REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
+    verification_link = f"{REPLIT_URL}/verify-email?token={token}"
+    
+    html = f"""
+    <h3>Verify your email</h3>
+    <p>Click the link below to verify your email address:</p>
+    <a href="{verification_link}">{verification_link}</a>
+    """
 
-    return {"message": "User created successfully"}
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "Please verify your email"
+    message["From"] = EMAIL_ADDRESS
+    message["To"] = user.email
+    message.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, user.email, message.as_string())
+    except Exception as e:
+        print("Failed to send email:", e)
+
+    return {"message": "User created successfully. Please check your email to verify your account."}
 
 @app.post("/login")
 def login(user: UserLogin):
@@ -146,6 +196,9 @@ def login(user: UserLogin):
     if not bcrypt.checkpw(user.password.encode("utf-8"), db_user["password"].encode("utf-8")):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
+    if not db_user.get("is_verified", False):
+        raise HTTPException(status_code=403, detail="Email not verified. Please verify your email before logging in.")
+
     payload = {
         "email": user.email,
         "exp": datetime.utcnow() + timedelta(minutes=JWT_EXP_DELTA_MINUTES)
@@ -153,6 +206,97 @@ def login(user: UserLogin):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
     return {"access_token": token}
+
+@app.get("/verify-email")
+def verify_email(token: str = Query(...)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "email_verification":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        email = payload.get("email")
+        users = load_users()
+        if email not in users:
+            raise HTTPException(status_code=404, detail="User not found")
+        users[email]["is_verified"] = True
+        save_users(users)
+        return {"message": "Email verified successfully!"}
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Verification token expired")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid verification token")
+
+@app.post("/forgot-password")
+def forgot_password(data: EmailSchema):
+    email = data.email
+    users = load_users()
+
+    if email not in users:
+        return {"message": "a password reset link has been sent."}
+
+    if not users[email].get("is_verified", False):
+        return {"message": "Email not verified. Cannot reset password."}
+
+    token = create_password_reset_token(email)
+    reset_link = f"{REPLIT_URL}/reset-password?token={token}"
+
+    html = f"""
+    <h3>Password Reset Request</h3>
+    <p>Click the link below to reset your password:</p>
+    <a href="{reset_link}">{reset_link}</a>
+    <p>This link will expire in 1 hour.</p>
+    """
+
+    message = MIMEMultipart("alternative")
+    message["Subject"] = "Password Reset Request"
+    message["From"] = EMAIL_ADDRESS
+    message["To"] = email
+    message.attach(MIMEText(html, "html"))
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.sendmail(EMAIL_ADDRESS, email, message.as_string())
+    except Exception as e:
+        print("Failed to send password reset email:", e)
+        return {"error": "Failed to send email"}
+
+    return {"message": "A password reset link has been sent , if there is an account associated with this email."}
+
+@app.get("/reset-password")
+def verify_reset_token(token: str = Query(...)):
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        email = payload.get("email")
+        users = load_users()
+        if email not in users:
+            raise HTTPException(status_code=404, detail="User not found")
+        return {"message": "Token valid", "email": email}
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Reset token expired")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
+
+@app.post("/reset-password")
+def reset_password(data: PasswordResetRequest):
+    try:
+        payload = jwt.decode(data.token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "password_reset":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+        email = payload.get("email")
+        users = load_users()
+        if email not in users:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        hashed_pw = bcrypt.hashpw(data.new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        users[email]["password"] = hashed_pw
+        save_users(users)
+        return {"message": "Password reset successfully"}
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Reset token expired")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid reset token")
 
 @app.get("/send-email")
 def send_email_report():
