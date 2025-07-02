@@ -3,8 +3,9 @@ import httpx
 import smtplib
 import json
 import bcrypt
-from fastapi import FastAPI, HTTPException, Query, Body
+from fastapi import FastAPI, HTTPException, Query, Body, Depends, Request, Security
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from jose import jwt
@@ -23,9 +24,9 @@ JWT_EXP_DELTA_MINUTES = 60
 REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
 
 USERS_FILE = "users.json"
+PORTFOLIO_FILE = "portfolios.json"
+bearer_scheme = HTTPBearer()
 
-
-PORTFOLIO_FILE = "portfolio.json"
 
 app = FastAPI()
 
@@ -48,15 +49,15 @@ def is_valid_ticker(ticker: str) -> bool:
           return True
   return False
 
-def load_portfolio():
+def load_portfolios():
     if os.path.exists(PORTFOLIO_FILE):
         with open(PORTFOLIO_FILE, "r") as f:
             return json.load(f)
-    return []
+    return {}
 
-def save_portfolio(portfolio_list):
+def save_portfolios(portfolios_dict):
     with open(PORTFOLIO_FILE, "w") as f:
-        json.dump(portfolio_list, f)
+        json.dump(portfolios_dict, f)
         
 def load_users():
     if os.path.exists(USERS_FILE):
@@ -77,6 +78,16 @@ def create_verification_token(email: str):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
 
+def get_current_user_email(credentials: HTTPAuthorizationCredentials = Security(bearer_scheme)):
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return payload["email"]
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        
 def create_password_reset_token(email: str):
     payload = {
         "email": email,
@@ -86,46 +97,55 @@ def create_password_reset_token(email: str):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
 
-portfolio = load_portfolio()
-
 @app.get("/")
 def read_root():
     return {"message": "Hello, FastAPI is working!"}
    
 @app.post("/portfolio/add")
-def add_stock(stock: StockTicker):
+def add_stock(stock: StockTicker, current_user_email: str = Depends(get_current_user_email)):
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(current_user_email, [])
+
     ticker = stock.ticker.upper()
-
-    if not is_valid_ticker(ticker):
-        raise HTTPException(status_code=400, detail="Ticker symbol does not exist")
-
-    if ticker in portfolio:
+    if ticker in user_portfolio:
         raise HTTPException(status_code=400, detail="Ticker already in portfolio")
 
-    portfolio.append(ticker)
-    save_portfolio(portfolio)  # Save after adding
-    return {"message": f"{ticker} added to portfolio", "portfolio": portfolio}
+    user_portfolio.append(ticker)
+    portfolios[current_user_email] = user_portfolio
+    save_portfolios(portfolios)
+
+    return {"message": f"{ticker} added to portfolio", "portfolio": user_portfolio}
 
 @app.post("/portfolio/remove")
-def remove_stock(stock: StockTicker):
+def remove_stock(stock: StockTicker, current_user_email: str = Depends(get_current_user_email)):
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(current_user_email, [])
+
     ticker = stock.ticker.upper()
-    if ticker not in portfolio:
-        raise HTTPException(status_code=404, detail="Ticker not found in portfolio")
-    portfolio.remove(ticker)
-    save_portfolio(portfolio)  # Save after adding
-    return {"message": f"{ticker} removed from portfolio", "portfolio": portfolio}
+    if ticker not in user_portfolio:
+        raise HTTPException(status_code=404, detail="Ticker not in portfolio")
+
+    user_portfolio.remove(ticker)
+    portfolios[current_user_email] = user_portfolio
+    save_portfolios(portfolios)
+
+    return {"message": f"{ticker} removed from portfolio", "portfolio": user_portfolio}
 
 @app.get("/portfolio")
-def get_portfolio():
-    return {"portfolio": portfolio}
+def get_portfolio(current_user_email: str = Depends(get_current_user_email)):
+    portfolios = load_portfolios()
+    return {"portfolio": portfolios.get(current_user_email, [])}
 
 @app.get("/portfolio/summary")
-def get_portfolio_summary():
-    if not portfolio:
+def get_portfolio_summary(current_user_email: str = Depends(get_current_user_email)):
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(current_user_email, [])
+
+    if not user_portfolio:
         return {"message": "Portfolio is empty", "summary": []}
 
     summary = []
-    for ticker in portfolio:
+    for ticker in user_portfolio:
         url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
         try:
             response = httpx.get(url)
@@ -299,11 +319,14 @@ def reset_password(data: PasswordResetRequest):
         raise HTTPException(status_code=400, detail="Invalid reset token")
 
 @app.get("/send-email")
-def send_email_report():
-    if not portfolio:
+def send_email_report(user_email: str = Depends(get_current_user_email)):
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(user_email, [])
+
+    if not user_portfolio:
         return {"message": "Portfolio is empty"}
 
-    summary = get_portfolio_summary()["summary"]
+    summary = get_portfolio_summary(user_email)["summary"]
 
     html = "<h3>📈 Daily Stock Summary</h3>"
     html += "<table border='1' cellpadding='6' cellspacing='0'>"
@@ -317,13 +340,13 @@ def send_email_report():
     message = MIMEMultipart("alternative")
     message["Subject"] = "📊 Daily Stock Portfolio Summary"
     message["From"] = EMAIL_ADDRESS
-    message["To"] = EMAIL_ADDRESS  # sends to your own email for now
+    message["To"] = user_email
     message.attach(MIMEText(html, "html"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_ADDRESS, EMAIL_ADDRESS, message.as_string())
+            server.sendmail(EMAIL_ADDRESS, user_email, message.as_string())
         return {"message": "Email sent successfully"}
     except Exception as e:
         return {"error": str(e)}
