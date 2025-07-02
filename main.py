@@ -22,7 +22,6 @@ JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 JWT_EXP_DELTA_MINUTES = 60
 REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
-
 USERS_FILE = "users.json"
 PORTFOLIO_FILE = "portfolios.json"
 bearer_scheme = HTTPBearer()
@@ -37,7 +36,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
+#functions
+#--------------------------------------------------------------
+#--------------------------------------------------------------
+#--------------------------------------------------------------
 def is_valid_ticker(ticker: str) -> bool:
   url = f"https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
   response = httpx.get(url)
@@ -96,6 +98,11 @@ def create_password_reset_token(email: str):
     }
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
+
+# APIs
+#--------------------------------------------------------------
+#--------------------------------------------------------------
+#--------------------------------------------------------------
 
 @app.get("/")
 def read_root():
