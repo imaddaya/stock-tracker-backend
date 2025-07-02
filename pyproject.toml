@@ -5,7 +5,9 @@ description = ""
 authors = ["Your Name <you@example.com>"]
 requires-python = ">=3.11"
 dependencies = [
+    "bcrypt>=4.3.0",
     "dcbase>=1.13.5",
+    "email-validator>=2.2.0",
     "fastapi>=0.115.14",
     "httpx>=0.28.1",
     "jose>=1.0.0",

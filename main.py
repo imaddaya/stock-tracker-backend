@@ -19,12 +19,14 @@ ALPHA_VANTAGE_API_KEY = os.environ["ALPHA_VANTAGE_API_KEY"]
 EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
 EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
 JWT_SECRET = os.environ["JWT_SECRET"]  
+FRONTEND_URL = os.environ["FRONTEND_URL"]
+REPLIT_URL = os.environ["REPLIT_URL"]
 JWT_ALGORITHM = "HS256"
 JWT_EXP_DELTA_MINUTES = 60
-REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
 USERS_FILE = "users.json"
 PORTFOLIO_FILE = "portfolios.json"
 bearer_scheme = HTTPBearer()
+
 
 
 app = FastAPI()
@@ -40,6 +42,7 @@ app.add_middleware(
 #--------------------------------------------------------------
 #--------------------------------------------------------------
 #--------------------------------------------------------------
+
 def is_valid_ticker(ticker: str) -> bool:
   url = f"https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
   response = httpx.get(url)
@@ -189,13 +192,13 @@ def signup(user: UserSignup):
     save_users(users)
     
     token = create_verification_token(user.email)
-    REPLIT_URL = os.environ.get("REPLIT_URL", "http://localhost:8000")
-    verification_link = f"{REPLIT_URL}/verify-email?token={token}"
+    FRONTEND_URL = os.environ.get("FRONTEND_URL")
+    verification_link = f"{FRONTEND_URL}/email-verified?token={token}"
     
     html = f"""
     <h3>Verify your email</h3>
     <p>Click the link below to verify your email address:</p>
-    <a href="{verification_link}">{verification_link}</a>
+    <a href="{verification_link}"style="color:#0070f3;"> >Click this link</a>
     """
 
     message = MIMEMultipart("alternative")
@@ -246,7 +249,7 @@ def verify_email(token: str = Query(...)):
             raise HTTPException(status_code=404, detail="User not found")
         users[email]["is_verified"] = True
         save_users(users)
-        return {"message": "Email verified successfully!"}
+        return {"verified": True}
     except ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="Verification token expired")
     except JWTError:
@@ -264,12 +267,12 @@ def forgot_password(data: EmailSchema):
         return {"message": "Email not verified. Cannot reset password."}
 
     token = create_password_reset_token(email)
-    reset_link = f"{REPLIT_URL}/reset-password?token={token}"
+    reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
 
     html = f"""
     <h3>Password Reset Request</h3>
     <p>Click the link below to reset your password:</p>
-    <a href="{reset_link}">{reset_link}</a>
+    <a href="{reset_link}" style="color:#0070f3;">Click this link</a>
     <p>This link will expire in 1 hour.</p>
     """
 
