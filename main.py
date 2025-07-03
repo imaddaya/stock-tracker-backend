@@ -3,7 +3,7 @@ import httpx
 import smtplib
 import json
 import bcrypt
-from fastapi import FastAPI, HTTPException, Query, Body, Depends, Request, Security
+from fastapi import FastAPI, HTTPException, Query, Body, Depends, Request, Security , APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from email.mime.multipart import MIMEMultipart
@@ -26,7 +26,7 @@ JWT_EXP_DELTA_MINUTES = 60
 USERS_FILE = "users.json"
 PORTFOLIO_FILE = "portfolios.json"
 bearer_scheme = HTTPBearer()
-
+router = APIRouter()
 
 
 app = FastAPI()
@@ -327,6 +327,31 @@ def reset_password(data: PasswordResetRequest):
         raise HTTPException(status_code=400, detail="Reset token expired")
     except JWTError:
         raise HTTPException(status_code=400, detail="Invalid reset token")
+
+@router.get("/search-symbols")
+async def search_symbols(keywords: str = Query(..., min_length=1)):
+    url = "https://www.alphavantage.co/query"
+    params = {
+        "function": "SYMBOL_SEARCH",
+        "keywords": keywords,
+        "apikey": ALPHA_VANTAGE_API_KEY,
+    }
+
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, params=params)
+        data = response.json()
+
+    results = data.get("bestMatches", [])
+    return [
+        {
+            "symbol": match["1. symbol"],
+            "name": match["2. name"],
+            "region": match["4. region"]
+        }
+        for match in results
+    ]
+
+app.include_router(router)
 
 @app.get("/send-email")
 def send_email_report(user_email: str = Depends(get_current_user_email)):
