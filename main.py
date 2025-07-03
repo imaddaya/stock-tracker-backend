@@ -160,6 +160,7 @@ def get_portfolio_summary(current_user_email: str = Depends(get_current_user_ema
         try:
             response = httpx.get(url)
             data = response.json()
+            print(f"Response for {ticker}: {data}")
             quote = data.get("Global Quote", {})
             if not quote:
                 summary.append({"ticker": ticker, "error": "No data returned"})
