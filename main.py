@@ -102,6 +102,42 @@ def create_password_reset_token(email: str):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
 
+def get_portfolio_summary(current_user_email: str = Depends(get_current_user_email)):
+    users = load_users()
+    user = users.get(current_user_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_api_key = user.get("alpha_vantage_api_key", ALPHA_VANTAGE_API_KEY)
+
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(current_user_email, [])
+
+    if not user_portfolio:
+        return {"message": "Portfolio is empty", "summary": []}
+
+    summary = []
+    for ticker in user_portfolio:
+        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={user_api_key}"
+        try:
+            response = httpx.get(url)
+            data = response.json()
+            quote = data.get("Global Quote", {})
+            if not quote:
+                summary.append({"ticker": ticker, "error": "No data returned"})
+                continue
+            summary.append({
+                "ticker": quote.get("01. symbol", ticker),
+                "price": quote.get("05. price", "N/A"),
+                "change_percent": quote.get("10. change percent", "N/A"),
+                "country": quote.get("08. country", "N/A")
+            })
+        except Exception as e:
+            summary.append({"ticker": ticker, "error": str(e)})
+
+    return {"summary": summary}
+
+
 # APIs
 #--------------------------------------------------------------
 #--------------------------------------------------------------
@@ -146,37 +182,10 @@ def get_portfolio(current_user_email: str = Depends(get_current_user_email)):
     portfolios = load_portfolios()
     return {"portfolio": portfolios.get(current_user_email, [])}
 
-@app.get("/portfolio/summary")
-def get_portfolio_summary(current_user_email: str = Depends(get_current_user_email)):
-    portfolios = load_portfolios()
-    user_portfolio = portfolios.get(current_user_email, [])
-
-    if not user_portfolio:
-        return {"message": "Portfolio is empty", "summary": []}
-
-    summary = []
-    for ticker in user_portfolio:
-        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={ALPHA_VANTAGE_API_KEY}"
-        try:
-            response = httpx.get(url)
-            data = response.json()
-            print(f"Response for {ticker}: {data}")
-            quote = data.get("Global Quote", {})
-            if not quote:
-                summary.append({"ticker": ticker, "error": "No data returned"})
-                continue
-            summary.append({
-                "ticker": quote.get("01. symbol", ticker),
-                "price": quote.get("05. price", "N/A"),
-                "change_percent": quote.get("10. change percent", "N/A")
-            })
-        except Exception as e:
-            summary.append({"ticker": ticker, "error": str(e)})
-
-    return {"summary": summary}
-
 @app.post("/signup")
 def signup(user: UserSignup):
+    if user.password != user.confirm_password:
+        raise HTTPException(status_code=400, detail="Passwords do not match")
     try:
         valid = validate_email(user.email)
         user.email = valid.email  
@@ -188,7 +197,8 @@ def signup(user: UserSignup):
     hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
     users[user.email] = {
         "password": hashed_pw,
-        "is_verified": False  
+        "is_verified": False, 
+        "alpha_vantage_api_key": user.alpha_vantage_api_key
     }
     save_users(users)
     
