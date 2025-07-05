@@ -102,40 +102,6 @@ def create_password_reset_token(email: str):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return token
 
-def get_portfolio_summary(current_user_email: str = Depends(get_current_user_email)):
-    users = load_users()
-    user = users.get(current_user_email)
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    user_api_key = user.get("alpha_vantage_api_key", ALPHA_VANTAGE_API_KEY)
-
-    portfolios = load_portfolios()
-    user_portfolio = portfolios.get(current_user_email, [])
-
-    if not user_portfolio:
-        return {"message": "Portfolio is empty", "summary": []}
-
-    summary = []
-    for ticker in user_portfolio:
-        url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={user_api_key}"
-        try:
-            response = httpx.get(url)
-            data = response.json()
-            quote = data.get("Global Quote", {})
-            if not quote:
-                summary.append({"ticker": ticker, "error": "No data returned"})
-                continue
-            summary.append({
-                "ticker": quote.get("01. symbol", ticker),
-                "price": quote.get("05. price", "N/A"),
-                "change_percent": quote.get("10. change percent", "N/A"),
-                "country": quote.get("08. country", "N/A")
-            })
-        except Exception as e:
-            summary.append({"ticker": ticker, "error": str(e)})
-
-    return {"summary": summary}
 
 
 # APIs
@@ -177,10 +143,54 @@ def remove_stock(stock: StockTicker, current_user_email: str = Depends(get_curre
 
     return {"message": f"{ticker} removed from portfolio", "portfolio": user_portfolio}
 
+@app.get("/portfolio/summary")
+def get_portfolio_summary(
+    ticker: str = Query(None),
+    current_user_email: str = Depends(get_current_user_email)
+):
+    users = load_users()
+    user = users.get(current_user_email)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user_api_key = user.get("alpha_vantage_api_key", ALPHA_VANTAGE_API_KEY)
+    portfolios = load_portfolios()
+    user_portfolio = portfolios.get(current_user_email, [])
+
+    if ticker:
+        if ticker not in user_portfolio:
+            raise HTTPException(status_code=400, detail="Ticker not in your portfolio")
+        return {
+            "summary": [fetch_single_stock_summary(ticker, user_api_key)]
+        }
+
+    # Default case: return list of tickers with empty info
+    return {
+        "summary": [
+            {"ticker": t, "price": "", "change_percent": "", "country": ""}
+            for t in user_portfolio
+        ]
+    }
+
+def fetch_single_stock_summary(ticker: str, api_key: str):
+    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={ticker}&apikey={api_key}"
+    try:
+        response = httpx.get(url)
+        data = response.json()
+        quote = data.get("Global Quote", {})
+        return {
+            "ticker": quote.get("01. symbol", ticker),
+            "price": quote.get("05. price", "N/A"),
+            "change_percent": quote.get("10. change percent", "N/A"),
+            "country": quote.get("08. country", "N/A"),
+        } if quote else {"ticker": ticker, "error": "No data returned"}
+    except Exception as e:
+        return {"ticker": ticker, "error": str(e)}
+
 @app.get("/portfolio")
 def get_portfolio(current_user_email: str = Depends(get_current_user_email)):
     portfolios = load_portfolios()
-    return {"portfolio": portfolios.get(current_user_email, [])}
+    return {"tickers": portfolios.get(current_user_email, [])}
 
 @app.post("/signup")
 def signup(user: UserSignup):
@@ -247,6 +257,11 @@ def login(user: UserLogin):
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
     return {"access_token": token}
+
+@app.post("/logout")
+def logout():
+    # No server-side token invalidation unless you're tracking tokens
+    return {"message": "Logged out successfully"}
 
 @app.get("/verify-email")
 def verify_email(token: str = Query(...)):
