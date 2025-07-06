@@ -13,7 +13,8 @@ from jose.exceptions import JWTError, ExpiredSignatureError
 from datetime import datetime, timedelta
 from stockticker.schemas import UserSignup, UserLogin, StockTicker, PasswordResetRequest, EmailSchema
 from email_validator import validate_email, EmailNotValidError
-
+from database import engine
+from models import Base
 
 ALPHA_VANTAGE_API_KEY = os.environ["ALPHA_VANTAGE_API_KEY"]
 EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
@@ -28,7 +29,7 @@ PORTFOLIO_FILE = "portfolios.json"
 bearer_scheme = HTTPBearer()
 router = APIRouter()
 
-
+Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.add_middleware(

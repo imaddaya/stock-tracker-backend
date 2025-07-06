@@ -3,7 +3,7 @@ modules = ["python-3.11"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["cargo", "libiconv", "libxcrypt", "rustc"]
+packages = ["cargo", "libiconv", "libxcrypt", "rustc", "sqlite-interactive"]
 
 [unitTest]
 language = "python3"
