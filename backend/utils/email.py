@@ -4,8 +4,8 @@ from email.mime.text import MIMEText
 import os
 from config import FRONTEND_URL  # ✅ FIXED IMPORT
 
-EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS") or ""
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD") or ""
+EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
+EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
 
 def send_email(subject: str, recipient: str, html_content: str):
     message = MIMEMultipart("alternative")

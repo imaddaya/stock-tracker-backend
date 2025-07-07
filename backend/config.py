@@ -1,3 +1,3 @@
 import os
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+FRONTEND_URL = os.environ["FRONTEND_URL"]

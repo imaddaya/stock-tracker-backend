@@ -4,7 +4,7 @@ from fastapi import HTTPException
 import os
 
 # JWT settings
-JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key")
+JWT_SECRET = os.environ["JWT_SECRET"]  
 JWT_ALGORITHM = "HS256"
 
 def create_token(data: dict, expires_delta: timedelta):
@@ -34,4 +34,11 @@ def create_password_reset_token(email: str):
     return create_token(
         data={"email": email, "type": "password_reset"},
         expires_delta=timedelta(hours=1)
+    )
+
+# Access token (used in login)
+def create_access_token(email: str):
+    return create_token(
+        data={"sub": email, "type": "access"},
+        expires_delta=timedelta(minutes=60)  # or make this configurable
     )
