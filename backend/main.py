@@ -7,7 +7,7 @@ from routers import auth, portfolio, stock_search, email
 
 # Create DB tables on startup (if not exists)
 Base.metadata.create_all(bind=engine)
-
+    
 app = FastAPI()
 
 # CORS middleware
@@ -21,9 +21,10 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(email.router)
 app.include_router(portfolio.router)
 app.include_router(stock_search.router)
-app.include_router(email.router)
+
 
 @app.get("/")
 def root():

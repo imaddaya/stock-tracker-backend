@@ -1,3 +1,4 @@
+from models import Stock, Portfolio
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from schemas import StockTicker, StockSummary
@@ -5,6 +6,7 @@ from cruds import portfolios as portfolio_crud, users as user_crud
 from database import get_db
 from dependencies import get_current_user_email
 import httpx
+
 
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
@@ -26,8 +28,9 @@ def get_portfolio_summary(db: Session = Depends(get_db), current_user_email: str
         try:
             response = httpx.get(url, timeout=10)
             data = response.json().get("Global Quote", {})
-            if not data:
-                continue
+            if response.status_code != 200 or "Global Quote" not in response.json():
+                raise HTTPException(status_code=502, detail="Stock API error")
+
 
             summaries.append(StockSummary(
                 symbol=data.get("01. symbol", stock.symbol),
@@ -41,3 +44,29 @@ def get_portfolio_summary(db: Session = Depends(get_db), current_user_email: str
             continue
 
     return summaries
+
+@router.post("/add")
+def add_stock_to_portfolio(
+    ticker: StockTicker,
+    db: Session = Depends(get_db),
+    current_user_email: str = Depends(get_current_user_email)
+):
+    stock = db.query(Stock).filter(Stock.symbol == ticker.ticker.upper()).first()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock not found")
+
+    # Check if it's already in the portfolio
+    existing = db.query(Portfolio).filter(
+        Portfolio.user_email == current_user_email,
+        Portfolio.ticker == stock.symbol
+    ).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Stock already in portfolio")
+
+    new_entry = Portfolio(user_email=current_user_email, ticker=stock.symbol)
+    db.add(new_entry)
+    db.commit()
+    db.refresh(new_entry)
+
+    return {"message": "Stock added to portfolio"}
