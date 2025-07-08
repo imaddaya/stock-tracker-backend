@@ -42,8 +42,13 @@ class EmailSchema(BaseModel):
     email: EmailStr
 
 class StockSummary(BaseModel):
-    symbol: str
-    name: str
-    price: float
-    change_percent: str
-    country: str
+    symbol: str                     
+    open: float                     
+    high: float                      
+    low: float                      
+    price: float                     
+    volume: int                     
+    latest_trading_day: str        
+    previous_close: float         
+    change: float                   
+    change_percent: str  
