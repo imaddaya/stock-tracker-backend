@@ -3,41 +3,34 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
-class User(Base):
-    __tablename__ = "users"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+class UsersTable(Base): # Use capital letter for class name
+    __tablename__ = "users_table" # Use snake_case for table name
+# everything is clear here
+    id: Mapped[int] = mapped_column(primary_key=True, index=True) 
     email: Mapped[str] = mapped_column(String(256), unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
-    alpha_vantage_api_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    alpha_vantage_api_key: Mapped[str] = mapped_column(String(128), nullable=False)
+#RELATIONSHIP BETWEEN TABLES
+    user_saved_stocks: Mapped[list["PortfoliosTable"]] = relationship("PortfoliosTable", back_populates="user", cascade="all, delete-orphan")
 
-    portfolios: Mapped[list["Portfolio"]] = relationship(
-        "Portfolio", back_populates="user", cascade="all, delete-orphan"
-    )
+class StocksTable(Base):
+    __tablename__ = "stocks_table"
 
-class Stock(Base):
-    __tablename__ = "stocks"
-
-    id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    symbol: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
-    name: Mapped[str] = mapped_column(String(256), nullable=False)
-    region: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    stock_symbol: Mapped[str] = mapped_column(String(20), primary_key=True, index=True, nullable=False)
+    stock_company_name: Mapped[str] = mapped_column(String(256), nullable=False)
     is_listed: Mapped[bool] = mapped_column(Boolean, default=True)
+#RELATIONSHIP BETWEEN TABLES
+    stock_appearance_in_portfolios: Mapped[list["PortfoliosTable"]] = relationship(
+        "PortfoliosTable", back_populates="stock", cascade="all, delete-orphan")
 
-    portfolios: Mapped[list["Portfolio"]] = relationship(
-        "Portfolio", back_populates="stock", cascade="all, delete-orphan"
-    )
-
-class Portfolio(Base):
-    __tablename__ = "portfolios"
+class PortfoliosTable(Base):
+    __tablename__ = "portfolios_table"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
-    stock_id: Mapped[int] = mapped_column(ForeignKey("stocks.id"), nullable=False)
-    added_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    user: Mapped["User"] = relationship("User", back_populates="portfolios")
-    stock: Mapped["Stock"] = relationship("Stock", back_populates="portfolios")
+    user_id: Mapped[int] = mapped_column(ForeignKey("users_table.id"), nullable=False)
+    stock_symbol: Mapped[str] = mapped_column(ForeignKey("stocks_table.symbol"), nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+#RELATIONSHIP BETWEEN TABLES
+    user: Mapped["UsersTable"] = relationship("UsersTable", back_populates="user_saved_stocks")
+    stock: Mapped["StocksTable"] = relationship("StocksTable", back_populates="stock_appearance_in_portfolios")

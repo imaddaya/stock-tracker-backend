@@ -31,13 +31,14 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-class StockTicker(BaseModel):
-    ticker: str
+class StockSymbol(BaseModel):
+    StockSymbol: str
 
 class PasswordResetRequest(BaseModel):
     token: str
     new_password: str
-
+    confirm_password: str
+    
 class EmailSchema(BaseModel):
     email: EmailStr
 

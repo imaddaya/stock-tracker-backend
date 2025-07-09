@@ -1,7 +1,7 @@
 from models import Stock, Portfolio , User
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from schemas import StockTicker, StockSummary
+from schemas import StockSymbol, StockSummary
 from cruds import portfolios as portfolio_crud, users as user_crud
 from database import get_db
 from dependencies import get_current_user_email
@@ -51,7 +51,7 @@ def get_stock_summary(
 
 @router.post("/add", status_code=status.HTTP_201_CREATED)
 def add_stock_to_portfolio(
-    ticker: StockTicker,
+    ticker: Stock,
     db: Session = Depends(get_db),
     current_user_email: str = Depends(get_current_user_email)
 ):

@@ -5,7 +5,7 @@ def get_user_portfolio(db: Session, user_email: str):
     user = db.query(User).filter(User.email == user_email).first()
     if not user:
         return []
-
+        
     # eager load the related stock to avoid attribute errors
     return (
         db.query(Portfolio)

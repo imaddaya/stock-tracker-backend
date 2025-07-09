@@ -7,17 +7,16 @@ def get_stock_by_ticker(db: Session, ticker: str):
 def list_all_stocks(db: Session):
     return db.query(Stock).all()
 
-def add_stock(db: Session, ticker: str, name: str, region: str, listed: bool = True):
+def add_stock(db: Session, ticker: str, name: str, listed: bool = True):
     existing = get_stock_by_ticker(db, ticker)
     if existing:
         # Update if needed
         existing.name = name
-        existing.region = region
         existing.is_listed = listed
         db.commit()
         return existing
 
-    new_stock = Stock(symbol=ticker.upper(), name=name, region=region, is_listed=listed)
+    new_stock = Stock(symbol=ticker.upper(), name=name,is_listed=listed)
     db.add(new_stock)
     db.commit()
     db.refresh(new_stock)
