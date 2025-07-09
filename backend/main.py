@@ -5,9 +5,9 @@ from database import engine
 from models import Base
 from routers import auth, portfolio, stock_search, email
 
-# Create DB tables on startup (if not exists)
+# create the databasu
 Base.metadata.create_all(bind=engine)
-    
+
 app = FastAPI()
 
 # CORS middleware
