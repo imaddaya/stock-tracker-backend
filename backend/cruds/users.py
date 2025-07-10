@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
-from models import User
+from models import UsersTable
 from schemas import UserSignup
 import bcrypt
 
 def create_user(db: Session, user: UserSignup):
     hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
-    db_user = User(
+    db_user = UsersTable(
         email=user.email,
         hashed_password=hashed_pw.decode("utf-8"),
         is_verified=False,
@@ -17,7 +17,7 @@ def create_user(db: Session, user: UserSignup):
     return db_user
 
 def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+    return db.query(UsersTable).filter(UsersTable.email == email).first()
 
 def verify_user(db: Session, email: str):
     user = get_user_by_email(db, email)
