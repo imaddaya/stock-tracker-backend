@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from database import engine
 from models import Base
 from routers import auth, portfolio, stock_search, email
+
+
 
 # create the databasu
 Base.metadata.create_all(bind=engine)
@@ -29,3 +30,4 @@ app.include_router(stock_search.router)
 @app.get("/")
 def root():
     return {"message": "FastAPI is working!"}
+

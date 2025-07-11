@@ -30,8 +30,8 @@ def import_csvfile_to_db():
         for row in reader:
             if row["status"].lower() == "active":
                 stock = StocksTable(
-                    symbol=row["symbol"],
-                    name=row["name"],
+                    stock_symbol=row["symbol"],
+                    stock_company_name=row["name"],
                     is_listed=True
                 )
                 db.add(stock)

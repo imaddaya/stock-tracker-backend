@@ -1,31 +1,25 @@
-from models import Stock, Portfolio , User
+from models import StocksTable, PortfoliosTable , UsersTable
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from schemas import StockSymbol, StockSummary
-from cruds import portfolios as portfolio_crud, users as user_crud
+from cruds import users as user_crud
 from database import get_db
 from dependencies import get_current_user_email
 import httpx
 
-
-
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
-@router.get("/summary/{symbol}", response_model=StockSummary)
-def get_stock_summary(
-    symbol: str,
-    db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
-):
+@router.get("/summary/{symbol}", response_model = StockSummary)
+def get_stock_summary(ticker: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email),):
     user = user_crud.get_user_by_email(db, current_user_email)
     if not user or not user.alpha_vantage_api_key:
         raise HTTPException(status_code=400, detail="Alpha Vantage API key not set")
 
-    stock = db.query(Stock).filter(Stock.symbol == symbol.upper()).first()
+    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == ticker.upper()).first()
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
 
-    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock.symbol}&apikey={user.alpha_vantage_api_key}"
+    url = f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={stock.stock_symbol}&apikey={user.alpha_vantage_api_key}"
 
     try:
         response = httpx.get(url, timeout=10)
@@ -34,7 +28,7 @@ def get_stock_summary(
             raise HTTPException(status_code=502, detail="Stock API error")
 
         return StockSummary(
-            symbol=data.get("01. symbol", stock.symbol),
+            symbol=data.get("01. symbol", stock.stock_symbol),
             open=float(data.get("02. open", 0.0)),
             high=float(data.get("03. high", 0.0)),
             low=float(data.get("04. low", 0.0)),
@@ -46,37 +40,33 @@ def get_stock_summary(
             change_percent=data.get("10. change percent", "0%")
         )
     except Exception as e:
-        print(f"❌ Failed to fetch data for {stock.symbol}: {e}")
+        print(f"❌ Failed to fetch data for {stock.stock_symbol}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.post("/add", status_code=status.HTTP_201_CREATED)
-def add_stock_to_portfolio(
-    ticker: Stock,
-    db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email)
-):
+def add_stock_to_portfolio(ticker: StockSymbol, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
     # Get user by email
-    user = db.query(User).filter(User.email == current_user_email).first()
+    user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     # Get stock by symbol (uppercase to be safe)
-    stock = db.query(Stock).filter(Stock.symbol == ticker.ticker.upper()).first()
+    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == ticker.stock_symbol.upper()).first()
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
 
     # Check if stock already in user's portfolio
-    existing = db.query(Portfolio).filter(
-        Portfolio.user_id == user.id,
-        Portfolio.stock_id == stock.id
+    existing = db.query(PortfoliosTable).filter(
+        PortfoliosTable.user_id == user.id,
+        PortfoliosTable.stock_symbol == stock.stock_symbol
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Stock already in portfolio")
 
     # Add to portfolio
-    new_entry = Portfolio(user_id=user.id, stock_id=stock.id)
+    new_entry = PortfoliosTable(user_id=user.id, stock_symbol = stock.stock_symbol)
     db.add(new_entry)
     db.commit()
     db.refresh(new_entry)
 
-    return {"message": f"Stock {stock.symbol} added to portfolio"}
+    return {"message": f"Stock {stock.stock_symbol} added to portfolio"}

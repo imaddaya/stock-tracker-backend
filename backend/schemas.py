@@ -39,7 +39,7 @@ class PasswordResetRequest(BaseModel):
     new_password: str
     confirm_password: str
 
-    @validator("password")
+    @validator("new_password")
     def password_complexity(cls, v):
         if len(v) < 8:
             raise ValueError("Password must be at least 8 characters long")
@@ -72,4 +72,4 @@ class StockSummary(BaseModel):
     latest_trading_day: str        
     previous_close: float         
     change: float                   
-    change_percent: float
+    change_percent: str

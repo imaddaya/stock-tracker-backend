@@ -39,7 +39,7 @@ def remove_stock_from_portfolio(db: Session, user_email: str, ticker: str):
     if not user:
         return False
 
-    stock = db.query(StocksTable).filter(StocksTable.symbol == ticker.upper()).first()
+    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == ticker.upper()).first()
     if not stock:
         return False
 
