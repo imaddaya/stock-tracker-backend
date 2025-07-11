@@ -1,4 +1,4 @@
-from models import StocksTable, PortfoliosTable , UsersTable
+from models import StocksTable, PortfoliosTable , UsersTable, StockDataCache
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from schemas import StockSymbol, StockSummary
@@ -6,6 +6,7 @@ from cruds import users as user_crud
 from database import get_db
 from dependencies import get_current_user_email
 import httpx
+from sqlalchemy import func
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
@@ -27,19 +28,58 @@ def get_stock_summary(symbol: str, db: Session = Depends(get_db), current_user_e
         if response.status_code != 200 or "Global Quote" not in response.json():
             raise HTTPException(status_code=502, detail="Stock API error")
 
-        return StockSummary(
-            symbol=data.get("01. symbol", stock.stock_symbol),
-            name=stock.stock_company_name,
-            open=float(data.get("02. open", 0.0)),
-            high=float(data.get("03. high", 0.0)),
-            low=float(data.get("04. low", 0.0)),
-            price=float(data.get("05. price", 0.0)),
-            volume=int(data.get("06. volume", 0)),
-            latest_trading_day=data.get("07. latest trading day", ""),
-            previous_close=float(data.get("08. previous close", 0.0)),
-            change=float(data.get("09. change", 0.0)),
-            change_percent=data.get("10. change percent", "0%")
-        )
+        response_data = {
+            "symbol": stock.stock_symbol,
+            "name": stock.stock_company_name,
+            "open": data["02. open"],
+            "high": data["03. high"],
+            "low": data["04. low"],
+            "price": data["05. price"],
+            "volume": data["06. volume"],
+            "latest_trading_day": data["07. latest trading day"],
+            "previous_close": data["08. previous close"],
+            "change": data["09. change"],
+            "change_percent": data["10. change percent"]
+        }
+
+        # Cache the data for this user
+        existing_cache = db.query(StockDataCache).filter(
+            StockDataCache.user_id == user.id,
+            StockDataCache.stock_symbol == stock.stock_symbol
+        ).first()
+
+        if existing_cache:
+            # Update existing cache
+            existing_cache.open_price = float(data["02. open"])
+            existing_cache.high_price = float(data["03. high"])
+            existing_cache.low_price = float(data["04. low"])
+            existing_cache.current_price = float(data["05. price"])
+            existing_cache.volume = int(data["06. volume"])
+            existing_cache.latest_trading_day = data["07. latest trading day"]
+            existing_cache.previous_close = float(data["08. previous close"])
+            existing_cache.change = float(data["09. change"])
+            existing_cache.change_percent = data["10. change percent"]
+            existing_cache.last_updated = func.now()
+        else:
+            # Create new cache entry
+            new_cache = StockDataCache(
+                user_id=user.id,
+                stock_symbol=stock.stock_symbol,
+                open_price=float(data["02. open"]),
+                high_price=float(data["03. high"]),
+                low_price=float(data["04. low"]),
+                current_price=float(data["05. price"]),
+                volume=int(data["06. volume"]),
+                latest_trading_day=data["07. latest trading day"],
+                previous_close=float(data["08. previous close"]),
+                change=float(data["09. change"]),
+                change_percent=data["10. change percent"]
+            )
+            db.add(new_cache)
+
+        db.commit()
+
+        return response_data
     except Exception as e:
         print(f"❌ Failed to fetch data for {stock.stock_symbol}: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
@@ -108,7 +148,7 @@ def remove_stock_from_portfolio(symbol: str, db: Session = Depends(get_db), curr
         PortfoliosTable.user_id == user.id,
         PortfoliosTable.stock_symbol == symbol.upper()
     ).first()
-    
+
     if not portfolio_entry:
         raise HTTPException(status_code=404, detail="Stock not found in portfolio")
 

@@ -34,3 +34,22 @@ class PortfoliosTable(Base):
 #RELATIONSHIP BETWEEN TABLES
     user: Mapped["UsersTable"] = relationship("UsersTable", back_populates="user_saved_stocks")
     stock: Mapped["StocksTable"] = relationship("StocksTable", back_populates="stock_appearance_in_portfolios")
+
+class StockDataCache(Base):
+    __tablename__ = "stock_data_cache"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users_table.id"), nullable=False)
+    stock_symbol: Mapped[str] = mapped_column(String(20), nullable=False)
+    open_price: Mapped[float] = mapped_column(nullable=True)
+    high_price: Mapped[float] = mapped_column(nullable=True)
+    low_price: Mapped[float] = mapped_column(nullable=True)
+    current_price: Mapped[float] = mapped_column(nullable=True)
+    volume: Mapped[int] = mapped_column(nullable=True)
+    latest_trading_day: Mapped[str] = mapped_column(String(20), nullable=True)
+    previous_close: Mapped[float] = mapped_column(nullable=True)
+    change: Mapped[float] = mapped_column(nullable=True)
+    change_percent: Mapped[str] = mapped_column(String(20), nullable=True)
+    last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+#RELATIONSHIP BETWEEN TABLES
+    user: Mapped["UsersTable"] = relationship("UsersTable")
