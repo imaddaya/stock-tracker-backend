@@ -29,7 +29,6 @@ def signup(user: UserSignup, db: Session = Depends(get_db)):
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
     db_user = user_crud.get_user_by_email(db, user.email)
-    print(db_user)
     if not db_user:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     if not bcrypt.checkpw(user.password.encode("utf-8"), db_user.hashed_password.encode("utf-8")):
@@ -37,10 +36,11 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
     if not db_user.is_verified:
         raise HTTPException(status_code=403, detail="Email not verified")
 
-    access_token = create_access_token(db_user.email)
+    access_token = create_access_token(db_user.email)    
+    print (db_user.email)
+    print (access_token)
     return {"access_token": access_token, "token_type": "bearer"}
-
-
+        
 @router.get("/verify-email")
 def verify_email(token: str, db: Session = Depends(get_db)):
     try:
