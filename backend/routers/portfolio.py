@@ -99,10 +99,33 @@ def get_portfolio_summary(db: Session = Depends(get_db), current_user_email: str
     for entry in portfolio:
         stock = db.query(StocksTable).filter(StocksTable.stock_symbol == entry.stock_symbol).first()
         if stock:
-            summaries.append({
-                "symbol": stock.stock_symbol,
-                "name": stock.stock_company_name
-            })
+            # Check if we have cached data for this stock
+            cached_data = db.query(StockDataCache).filter(
+                StockDataCache.user_id == user.id,
+                StockDataCache.stock_symbol == stock.stock_symbol
+            ).first()
+
+            if cached_data:
+                # Return data with cached values
+                summaries.append({
+                    "symbol": stock.stock_symbol,
+                    "name": stock.stock_company_name,
+                    "open": cached_data.open_price,
+                    "high": cached_data.high_price,
+                    "low": cached_data.low_price,
+                    "price": cached_data.current_price,
+                    "volume": cached_data.volume,
+                    "latest_trading_day": cached_data.latest_trading_day,
+                    "previous_close": cached_data.previous_close,
+                    "change": cached_data.change,
+                    "change_percent": cached_data.change_percent
+                })
+            else:
+                # Return data without price info (will show N/A in frontend)
+                summaries.append({
+                    "symbol": stock.stock_symbol,
+                    "name": stock.stock_company_name
+                })
 
     return summaries
 
