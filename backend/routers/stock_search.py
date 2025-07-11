@@ -40,7 +40,7 @@ def get_stocks(
 
     # exclude owned stocks
     if owned_tickers:
-        query = query.filter(StocksTable.stock_symbol.in_(owned_tickers))
+        query = query.filter(~StocksTable.stock_symbol.in_(owned_tickers))
 
     # pagination
     results = query.offset(offset).limit(limit).all()

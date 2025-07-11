@@ -18,3 +18,15 @@ deploymentTarget = "cloudrun"
 [[ports]]
 localPort = 8000
 externalPort = 80
+
+[workflows]
+runButton = "Run Backend"
+
+[[workflows.workflow]]
+name = "Run Backend"
+author = 44436369
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd backend && python main.py"

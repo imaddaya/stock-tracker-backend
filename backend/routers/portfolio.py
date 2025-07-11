@@ -95,3 +95,24 @@ def add_stock_to_portfolio(ticker: StockSymbol, db: Session = Depends(get_db), c
     db.refresh(new_entry)
 
     return {"message": f"Stock {stock.stock_symbol} added to portfolio"}
+
+@router.delete("/remove/{symbol}", status_code=status.HTTP_200_OK)
+def remove_stock_from_portfolio(symbol: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
+    user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Check if stock exists in portfolio
+    portfolio_entry = db.query(PortfoliosTable).filter(
+        PortfoliosTable.user_id == user.id,
+        PortfoliosTable.stock_symbol == symbol.upper()
+    ).first()
+    
+    if not portfolio_entry:
+        raise HTTPException(status_code=404, detail="Stock not found in portfolio")
+
+    # Remove from portfolio
+    db.delete(portfolio_entry)
+    db.commit()
+
+    return {"message": f"Stock {symbol.upper()} removed from portfolio"}
