@@ -10,12 +10,12 @@ import httpx
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
 @router.get("/summary/{symbol}", response_model = StockSummary)
-def get_stock_summary(ticker: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email),):
+def get_stock_summary(symbol: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email),):
     user = user_crud.get_user_by_email(db, current_user_email)
     if not user or not user.alpha_vantage_api_key:
         raise HTTPException(status_code=400, detail="Alpha Vantage API key not set")
 
-    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == ticker.upper()).first()
+    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == symbol.upper()).first()
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
 
@@ -29,6 +29,7 @@ def get_stock_summary(ticker: str, db: Session = Depends(get_db), current_user_e
 
         return StockSummary(
             symbol=data.get("01. symbol", stock.stock_symbol),
+            name=stock.stock_company_name,
             open=float(data.get("02. open", 0.0)),
             high=float(data.get("03. high", 0.0)),
             low=float(data.get("04. low", 0.0)),

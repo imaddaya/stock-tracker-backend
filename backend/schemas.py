@@ -63,7 +63,8 @@ class EmailSchema(BaseModel):
     email: EmailStr
 
 class StockSummary(BaseModel):
-    symbol: str                     
+    symbol: str  
+    name: str
     open: float                     
     high: float                      
     low: float                      
