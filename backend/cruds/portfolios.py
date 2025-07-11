@@ -1,14 +1,14 @@
-from sqlalchemy.orm import Session , joinedload
+from sqlalchemy.orm import Session 
 from models import PortfoliosTable, UsersTable, StocksTable
 
 def get_user_portfolio(db: Session, user_email: str):
     user = db.query(UsersTable).filter(UsersTable.email == user_email).first()
+    print(user)
     if not user:
         return []
         
     return (
         db.query(PortfoliosTable)
-        .options(joinedload(PortfoliosTable.stock))
         .filter(PortfoliosTable.user_id == user.id)
         .all()
     )
