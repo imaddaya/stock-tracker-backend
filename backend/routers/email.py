@@ -38,7 +38,7 @@ def set_email_reminder(
         user.email_reminder_time = request.reminder_time
     elif not request.enabled:
         user.email_reminder_time = None  # Clear time when disabled
-
+    
     try:
         db.commit()
         return {
