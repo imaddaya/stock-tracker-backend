@@ -130,7 +130,7 @@ def reset_password(data: dict, db: Session = Depends(get_db)):
     except JWTError:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-@router.get("/confirm-account-deletion")
+@router.post("/confirm-account-deletion")
 def confirm_account_deletion(token: str, db: Session = Depends(get_db)):
     try:
         payload = decode_token(token)
