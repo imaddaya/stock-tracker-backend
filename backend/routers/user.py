@@ -37,11 +37,11 @@ def set_email_reminder(request: EmailReminderRequest, db: Session = Depends(get_
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Add these fields to user model if they don't exist
-    if not hasattr(user, 'email_reminder_time'):
-        # We'll need to add these fields to the model
-        pass
+    user.email_reminder_enabled = request.enabled
+    if request.reminder_time:
+        user.email_reminder_time = request.reminder_time
     
+    db.commit()
     return {"message": "Email reminder settings updated"}
 
 @router.put("/update-api-key")
@@ -51,13 +51,13 @@ def update_api_key(request: UpdateApiKeyRequest, db: Session = Depends(get_db), 
         raise HTTPException(status_code=404, detail="User not found")
     
     # Check for rate limiting (once per week)
-    if hasattr(user, 'last_api_key_update'):
+    if user.last_api_key_update:
         from datetime import timedelta
-        if user.last_api_key_update and (datetime.utcnow() - user.last_api_key_update) < timedelta(days=7):
+        if (datetime.utcnow() - user.last_api_key_update) < timedelta(days=7):
             raise HTTPException(status_code=429, detail="API key can only be updated once per week")
     
     user.alpha_vantage_api_key = request.new_api_key
-    # user.last_api_key_update = datetime.utcnow()  # Add this field to model
+    user.last_api_key_update = datetime.utcnow()
     db.commit()
     
     return {"message": "API key updated successfully"}
@@ -69,13 +69,11 @@ def initiate_account_deletion(db: Session = Depends(get_db), current_user_email:
         raise HTTPException(status_code=404, detail="User not found")
     
     # Create deletion token (30 minutes expiry)
-    from utils.jwt import create_token
+    from utils.jwt import create_verification_token
+    from utils.email import send_account_deletion_email
     from datetime import timedelta
     
-    token = create_token(
-        data={"email": user.email, "type": "account_deletion"},
-        expires_delta=timedelta(minutes=30)
-    )
+    token = create_verification_token(user.email)  # This creates a 30-min token
     
     # Send deletion confirmation email
     send_account_deletion_email(user.email, token)

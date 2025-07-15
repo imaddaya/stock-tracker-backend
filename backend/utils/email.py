@@ -34,12 +34,24 @@ def send_verification_email(email: str, token: str):
 def send_password_reset_email(email: str, token: str):
     reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
     html = f"""
-    <h3>Password Reset Request</h3>
+    <h3>Reset your password</h3>
     <p>Click the link below to reset your password:</p>
     <a href="{reset_link}" style="color:#0070f3;">Reset Password</a>
     <p>This link will expire in 1 hour.</p>
     """
-    send_email("Password Reset Request", email, html)
+    send_email("Reset your password", email, html)
+
+def send_account_deletion_email(email: str, token: str):
+    deletion_link = f"{FRONTEND_URL}/confirm-account-deletion?token={token}"
+    html = f"""
+    <h3>⚠️ Account Deletion Confirmation</h3>
+    <p>You have requested to delete your account. This action is <strong>PERMANENT</strong> and cannot be undone.</p>
+    <p>Click the link below to permanently delete your account:</p>
+    <a href="{deletion_link}" style="color:#dc3545; font-weight: bold;">DELETE MY ACCOUNT PERMANENTLY</a>
+    <p><strong>This link will expire in 30 minutes.</strong></p>
+    <p>If you did not request this deletion, please ignore this email.</p>
+    """
+    send_email("🚨 Confirm Account Deletion", email, html)
 
 def send_daily_summary_email(email: str, portfolio_summary: list):
     html = "<h3>📈 Daily Stock Summary</h3>"
