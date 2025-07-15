@@ -14,6 +14,7 @@ router = APIRouter(prefix="/email", tags=["email"])
 class EmailReminderRequest(BaseModel):
     reminder_time: str = None
     enabled: bool
+    timezone: str = "UTC"  # Default to UTC
 
 @router.post("/reminder-settings")
 def set_email_reminder(
@@ -36,6 +37,7 @@ def set_email_reminder(
     
     # Update user settings
     user.email_reminder_enabled = request.enabled
+    user.timezone = request.timezone or "UTC"
     if request.enabled and request.reminder_time:
         user.email_reminder_time = request.reminder_time
     elif not request.enabled:
@@ -46,7 +48,8 @@ def set_email_reminder(
         return {
             "message": "Email reminder settings updated successfully",
             "enabled": user.email_reminder_enabled,
-            "reminder_time": user.email_reminder_time
+            "reminder_time": user.email_reminder_time,
+            "timezone": user.timezone
         }
     except Exception as e:
         db.rollback()
@@ -156,5 +159,6 @@ def get_email_settings(
     
     return {
         "email_reminder_enabled": user.email_reminder_enabled or False,
-        "email_reminder_time": user.email_reminder_time
+        "email_reminder_time": user.email_reminder_time,
+        "timezone": user.timezone or "UTC"
     }

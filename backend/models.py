@@ -13,6 +13,7 @@ class UsersTable(Base): # Use capital letter for class name
     alpha_vantage_api_key: Mapped[str] = mapped_column(String(128), nullable=False)
     email_reminder_time: Mapped[str] = mapped_column(String(10), nullable=True)  # Format: "HH:MM"
     email_reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    timezone: Mapped[str] = mapped_column(String(50), nullable=True, default="UTC")  # e.g., "Europe/London", "America/New_York"
     last_api_key_update: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
 #RELATIONSHIP BETWEEN TABLES
     user_saved_stocks: Mapped[list["PortfoliosTable"]] = relationship("PortfoliosTable", back_populates="user", cascade="all, delete-orphan")
