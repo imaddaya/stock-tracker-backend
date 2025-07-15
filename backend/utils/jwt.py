@@ -42,3 +42,10 @@ def create_access_token(email: str):
         data={"sub": email, "type": "access"},
         expires_delta=timedelta(minutes=60)  # or make this configurable
     )
+
+# Account deletion token
+def create_account_deletion_token(email: str):
+    return create_token(
+        data={"email": email, "type": "account_deletion"},
+        expires_delta=timedelta(minutes=30)
+    )

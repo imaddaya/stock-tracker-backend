@@ -55,11 +55,10 @@ def initiate_account_deletion(db: Session = Depends(get_db), current_user_email:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-
-    token = create_verification_token(user.email)  # This creates a 30-min token
+    from utils.jwt import create_account_deletion_token
+    token = create_account_deletion_token(user.email)
     
     # Send deletion confirmation email
-
     send_account_deletion_email(user.email, token)
     
     return {"message": "Account deletion verification email sent. You have 30 minutes to confirm."}
