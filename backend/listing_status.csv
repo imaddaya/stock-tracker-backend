@@ -14,6 +14,7 @@ AACT-U,Ares Acquisition Corporation II - Units (1 Ord Class A & 1/2 War),NYSE,St
 AACT-WS,Ares Acquisition Corporation II - Warrants (01/01/9999),NYSE,Stock,2023-06-12,null,Active
 AADR,ADVISORSHARES DORSEY WRIGHT ADR ETF ,NASDAQ,ETF,2010-07-21,null,Active
 AAL,American Airlines Group Inc,NASDAQ,Stock,2005-09-27,null,Active
+AALG,Leverage Shares 2X Long AAL Daily ETF,NASDAQ,Stock,2025-07-11,null,Active
 AAM,AA Mission Acquisition Corp - Class A,NYSE,Stock,2024-09-16,null,Active
 AAM-U,AA Mission Acquisition Corp - Units (1 Ord Share Class A & 1/2 War),NYSE,Stock,2024-08-01,null,Active
 AAM-WS,AA Mission Acquisition Corp Warrants each whole warrant entitles the holder to purchase one Class A ordinary share at a price of 11.50 per share,NYSE,Stock,2024-09-16,null,Active
@@ -759,6 +760,7 @@ ASTI,Ascent Solar Technologies Inc,NASDAQ,Stock,2006-07-25,null,Active
 ASTL,Algoma Steel Group Inc,NASDAQ,Stock,2021-10-20,null,Active
 ASTLW,Algoma Steel Group Inc - Warrants (19/10/2026),NASDAQ,Stock,2021-10-20,null,Active
 ASTS,AST SpaceMobile Inc - Class A,NASDAQ,Stock,2019-11-01,null,Active
+ASTX,Astex Pharmaceuticals Inc,NASDAQ,Stock,2025-07-11,null,Active
 ASUR,Asure Software Inc,NASDAQ,Stock,1992-04-07,null,Active
 ASX,ASE Technology Holding Co.Ltd,NYSE,Stock,2000-10-02,null,Active
 ASYS,Amtech Systems Inc,NASDAQ,Stock,1984-09-07,null,Active
@@ -1363,6 +1365,7 @@ BMEA,Biomea Fusion Inc,NASDAQ,Stock,2021-04-16,null,Active
 BMED,BlackRock Future Health ETF,NYSE ARCA,ETF,2020-10-01,null,Active
 BMEZ,BlackRock Health Sciences Term Trust,NYSE,Stock,2020-01-29,null,Active
 BMGL,Basel Medical Group Ltd,NASDAQ,Stock,2025-02-25,null,Active
+BMHL,Bluemount Holdings Ltd,NASDAQ,Stock,2025-07-11,null,Active
 BMI,Badger Meter Inc,NYSE,Stock,1984-09-07,null,Active
 BML-P-G,Bank Of America Corp,NYSE,Stock,2014-09-22,null,Active
 BML-P-H,Bank Of America Corp,NYSE,Stock,2014-09-22,null,Active
@@ -1836,7 +1839,7 @@ CCS,Century Communities Inc,NYSE,Stock,2014-06-18,null,Active
 CCSB,CARBON COLLECTIVE SHORT DURATION GREEN BOND ETF ,NASDAQ,ETF,2024-04-12,null,Active
 CCSI,Consensus Cloud Solutions Inc,NASDAQ,Stock,2021-10-08,null,Active
 CCSO,CARBON COLLECTIVE CLIMATE SOLUTIONS U.S. EQUITY ETF ,NASDAQ,ETF,2022-09-20,null,Active
-CCTG,CCSC Technology International Holdings Ltd - Class A,NASDAQ,Stock,2024-09-17,null,Active
+CCTG,CCSC Technology International Holdings Ltd,NASDAQ,Stock,2024-01-18,null,Active
 CCU,Compania Cervecerias Unidas S.A.,NYSE,Stock,2001-01-02,null,Active
 CCV,Churchill Capital Corp V - Class A,NYSE,Stock,2021-02-05,null,Active
 CCV-U,Churchill Capital Corp V - Units (1 Ord Class A & 1/4 War),NYSE,Stock,2020-12-16,null,Active
@@ -2541,6 +2544,7 @@ CWK,Cushman & Wakefield plc,NYSE,Stock,2018-08-02,null,Active
 CWS,ADVISORSHARES FOCUSED EQUITY ETF ,NYSE ARCA,ETF,2016-09-21,null,Active
 CWST,Casella Waste Systems Inc - Class A,NASDAQ,Stock,1997-10-29,null,Active
 CWT,California Water Service Group,NYSE,Stock,1990-03-26,null,Active
+CWVX,Tradr 2X Long CRWV Daily ETF,BATS,Stock,2025-07-11,null,Active
 CX,Cemex S.A.B. De C.V.,NYSE,Stock,1999-09-15,null,Active
 CXAI,CXApp Inc - Class A,NASDAQ,Stock,2021-02-04,null,Active
 CXAIW,CXApp Inc - Warrants (14/03/2028),NASDAQ,Stock,2021-02-04,null,Active
@@ -4384,6 +4388,7 @@ GETY,Getty Images Holdings Inc - Class A,NYSE,Stock,2020-09-21,null,Active
 GEV,GE Vernova LLC,NYSE,Stock,2024-03-27,null,Active
 GEV-W,GE Vernova Inc WhenIssued,NYSE,Stock,2024-03-27,null,Active
 GEVO,Gevo Inc,NASDAQ,Stock,2011-02-09,null,Active
+GEVX,Tradr 2X Long GEV Daily ETF,BATS,Stock,2025-07-11,null,Active
 GF,New Germany Fund Inc,NYSE,ETF,1990-01-25,null,Active
 GFAI,Guardforce AI Co Ltd,NASDAQ,Stock,2021-01-08,null,Active
 GFAIW,Guardforce AI Co Ltd - Warrants (01/09/2026),NASDAQ,Stock,2021-09-29,null,Active
@@ -4467,7 +4472,9 @@ GL,Globe Life Inc,NYSE,Stock,1987-12-30,null,Active
 GL-P-D,Globe Life Inc,NYSE,Stock,2021-06-21,null,Active
 GLAD,Gladstone Capital Corp,NASDAQ,Stock,2002-08-02,null,Active
 GLADZ,Gladstone Capital Corp,NASDAQ,Stock,2023-08-18,null,Active
+GLBAV,GCI Liberty Inc,NASDAQ,Stock,2025-07-11,null,Active
 GLBE,Global E Online Ltd,NASDAQ,Stock,2021-05-12,null,Active
+GLBKV,GCI Liberty Inc,NASDAQ,Stock,2025-07-11,null,Active
 GLBL,Pacer MSCI World Industry Advantage ETF,BATS,ETF,2024-09-17,null,Active
 GLBLW,Cartesian Growth Corp - Warrants (26/02/2028),NASDAQ,Stock,2021-04-28,null,Active
 GLBS,Globus Maritime Ltd,NASDAQ,Stock,2008-03-11,null,Active
@@ -4610,6 +4617,7 @@ GPRE,Green Plains Inc,NASDAQ,Stock,2006-03-15,null,Active
 GPRF,GOLDMAN SACHS ACCESS U.S. PREFERRED STOCK AND HYBRID SECURITIES ETF ,NASDAQ,ETF,2024-08-01,null,Active
 GPRK,Geopark Ltd,NYSE,Stock,2010-10-15,null,Active
 GPRO,GoPro Inc - Class A,NASDAQ,Stock,2014-06-26,null,Active
+GQGU,The Advisors Inner Circle Fund III GQG US Equity,NYSE,Stock,2025-07-14,null,Active
 GQI,Natixis Gateway Quality Income ETF,NYSE ARCA,ETF,2023-12-13,null,Active
 GQQQ,Astoria US Quality Growth Kings ETF,NASDAQ,ETF,2024-10-01,null,Active
 GQRE,FLEXSHARES GLOBAL QUALITY REAL ESTATE INDEX FUND ,NYSE ARCA,ETF,2013-11-06,null,Active
@@ -4948,6 +4956,7 @@ HOCT,Innovator Premium Income 9 Buffer ETF - October,BATS,ETF,2023-10-02,null,Ac
 HODL,VanEck Bitcoin Trust,BATS,Stock,2024-01-11,null,Active
 HOFT,Hooker Furnishings Corporation,NASDAQ,Stock,2001-01-02,null,Active
 HOG,Harley-Davidson Inc,NYSE,Stock,1987-11-05,null,Active
+HOLA,J.P. Morgan ExchangeTraded Fund Trust JPMorgan International Hedged Equity Laddered Overlay,NYSE,Stock,2025-07-14,null,Active
 HOLO,HOLOPAK TECHNOLOGIES INC,NASDAQ,Stock,2022-09-19,null,Active
 HOLOW,MicroCloud Hologram Inc - Warrants (31/01/2028),NASDAQ,Stock,2021-08-05,null,Active
 HOLX,Hologic Inc,NASDAQ,Stock,1990-03-26,null,Active
@@ -5717,7 +5726,7 @@ IWY,ISHARES RUSSELL TOP 200 GROWTH ETF ,NYSE ARCA,ETF,2009-09-28,null,Active
 IX,Orix Corporation,NYSE,Stock,1998-09-16,null,Active
 IXC,iShares Global Energy ETF,NYSE ARCA,ETF,2001-11-16,null,Active
 IXG,ISHARES GLOBAL FINANCIALS ETF ,NYSE ARCA,ETF,2001-11-26,null,Active
-IXHL,Incannex Healthcare Ltd,NASDAQ,Stock,2022-03-02,null,Active
+IXHL,Incannex Healthcare Inc,NASDAQ,Stock,2023-11-30,null,Active
 IXJ,ISHARES GLOBAL HEALTHCARE ETF ,NYSE ARCA,ETF,2001-11-26,null,Active
 IXN,ISHARES GLOBAL TECH ETF ,NYSE ARCA,ETF,2001-11-26,null,Active
 IXP,ISHARES GLOBAL COMM SERVICES ETF ,NYSE ARCA,ETF,2001-11-26,null,Active
@@ -6242,6 +6251,8 @@ LBBB,Lakeshore Acquisition II Corp,NASDAQ,Stock,2022-04-14,null,Active
 LBBBR,Lakeshore Acquisition II Corp,NASDAQ,Stock,2022-04-14,null,Active
 LBBBU,Lakeshore Acquisition II Corp - Units (1 Ord 1/2 War & 1 Right),NASDAQ,Stock,2022-03-09,null,Active
 LBBBW,Lakeshore Acquisition II Corp - Warrants (18/11/2026),NASDAQ,Stock,2022-04-14,null,Active
+LBDAV,Liberty Broadband Corporation,NASDAQ,Stock,2025-07-14,null,Active
+LBDKV,Liberty Broadband Corporation,NASDAQ,Stock,2025-07-11,null,Active
 LBGJ,Li Bang International Corp Inc,NASDAQ,Stock,2024-10-23,null,Active
 LBO,WHITEWOLF PUBLICLY LISTED PRIVATE EQUITY ETF ,BATS,ETF,2023-11-30,null,Active
 LBPH,Longboard Pharmaceuticals Inc,NASDAQ,Stock,2021-03-12,null,Active
@@ -6568,6 +6579,7 @@ LUX,Tema Luxury ETF,NYSE ARCA,ETF,2023-05-11,null,Active
 LUXE,MYT Netherlands Parent BV,NYSE,Stock,2021-01-21,null,Active
 LVAC,Lava Medtech Acquisition Corp - Class A,NASDAQ,Stock,2021-12-22,null,Active
 LVACW,Lava Medtech Acquisition Corp - Warrants (21/10/2026),NASDAQ,Stock,2021-12-17,null,Active
+LVDS,JPMorgan Fundamental Data Science Large Value ETF,BATS,Stock,2025-07-14,null,Active
 LVHD,FRANKLIN U.S. LOW VOLATILITY HIGH DIVIDEND INDEX ETF ,NASDAQ,ETF,2015-12-29,null,Active
 LVHI,FRANKLIN INTERNATIONAL LOW VOLATILITY HIGH DIVIDEND INDEX ETF ,BATS,ETF,2016-07-28,null,Active
 LVLU,Lulus Fashion Lounge Holdings Inc,NASDAQ,Stock,2021-11-11,null,Active
@@ -7974,6 +7986,7 @@ OSUR,Orasure Technologies Inc,NASDAQ,Stock,1992-03-17,null,Active
 OSW,OneSpaWorld Holdings Ltd,NASDAQ,Stock,2019-03-20,null,Active
 OTEX,Open Text Corp,NASDAQ,Stock,1996-01-24,null,Active
 OTF,Blue Owl Technology Finance Corp,NYSE,Stock,2025-06-12,null,Active
+OTGL,OTG Latin America ETF,NASDAQ,Stock,2025-07-14,null,Active
 OTIS,Otis Worldwide Corp,NYSE,Stock,2020-03-19,null,Active
 OTLK,Outlook Therapeutics Inc,NASDAQ,Stock,2016-06-14,null,Active
 OTLY,Oatly Group AB,NASDAQ,Stock,2021-05-20,null,Active
@@ -8022,6 +8035,8 @@ OXSQZ,Oxford Square Capital Corp,NASDAQ,Stock,2019-04-04,null,Active
 OXUSU,Borealis Foods Inc - Units (1 Ord Class A & 1 War),NASDAQ,Stock,2021-09-03,null,Active
 OXY,Occidental Petroleum Corp,NYSE,Stock,1981-12-31,null,Active
 OXY-WS,Occidental Petroleum Corp - Warrants (03/08/2027),NYSE,Stock,2020-07-30,null,Active
+OYSE,Oyster Enterprises II Acquisition Corp,NASDAQ,Stock,2025-07-11,null,Active
+OYSER,Oyster Enterprises II Acquisition Corp Rights,NASDAQ,Stock,2025-07-11,null,Active
 OYSEU,Oyster Enterprises II Acquisition Corp - Units (1 Ord Cls A & 1 Rts),NASDAQ,Stock,2025-05-22,null,Active
 OZ,Belpointe REIT Inc,NYSE,Stock,2019-11-27,null,Active
 OZEM,ROUNDHILL GLP-1 & WEIGHT LOSS ETF ,NASDAQ,ETF,2024-05-21,null,Active
@@ -8122,7 +8137,9 @@ PBUS,INVESCO MSCI USA ETF ,BATS,ETF,2017-09-22,null,Active
 PBW,Invesco WilderHill Clean Energy ETF,NYSE ARCA,ETF,2005-03-03,null,Active
 PBYI,Puma Biotechnology Inc,NASDAQ,Stock,2012-04-24,null,Active
 PC,Premium Catering (Holdings) Ltd,NASDAQ,Stock,2024-09-25,null,Active
+PCAP,Patriot Capital Funding Inc,NASDAQ,Stock,2005-07-28,null,Active
 PCAPU,ProCap Acquisition Corp - Units (1 Ord Share Class A & 1/3 War),NASDAQ,Stock,2025-05-21,null,Active
+PCAPW,ProCap Acquisition Corp Warrant,NASDAQ,Stock,2025-07-11,null,Active
 PCAR,Paccar Inc,NASDAQ,Stock,1986-07-09,null,Active
 PCB,PCB Bancorp.,NASDAQ,Stock,2014-06-04,null,Active
 PCCE,Polen Capital China Growth ETF,NYSE ARCA,ETF,2024-03-15,null,Active
@@ -8246,6 +8263,7 @@ PFN,Pimco Income Strategy Fund II,NYSE,ETF,2004-10-27,null,Active
 PFO,Flaherty & Crumrine Preferred and Income Opportunity Fund Inc,NYSE,ETF,1992-02-06,null,Active
 PFRL,PGIM FLOATING RATE INCOME ETF ,NYSE ARCA,ETF,2022-05-24,null,Active
 PFS,Provident Financial Services Inc,NYSE,Stock,2003-01-16,null,Active
+PFSA,Profusa Inc,NASDAQ,Stock,2025-07-14,null,Active
 PFSI,PennyMac Financial Services Inc,NYSE,Stock,2013-05-09,null,Active
 PFUT,Putnam Sustainable Future ETF,NYSE ARCA,ETF,2021-05-26,null,Active
 PFX,PhenixFIN Corp,NASDAQ,ETF,2011-01-21,null,Active
@@ -9624,7 +9642,7 @@ SHO-P-I,Sunstone Hotel Investors Inc,NYSE,Stock,2021-07-20,null,Active
 SHOC,STRIVE U.S. SEMICONDUCTOR ETF ,NYSE ARCA,ETF,2022-10-06,null,Active
 SHOO,Steven Madden Ltd,NASDAQ,Stock,1993-12-13,null,Active
 SHOP,Shopify Inc - Class A,NYSE,Stock,2015-05-21,null,Active
-SHOT,Safety Shot Inc Com,NASDAQ,Stock,2023-09-15,null,Active
+SHOT,Safety Shot Inc,NASDAQ,Stock,2020-10-30,null,Active
 SHOTW,Safety Shot Inc Wt Exp,NASDAQ,Stock,2023-09-15,null,Active
 SHPH,Shuttle Pharmaceuticals Holdings Inc,NASDAQ,Stock,2022-08-31,null,Active
 SHPP,PACER INDUSTRIALS AND LOGISTICS ETF ,NYSE ARCA,ETF,2022-06-09,null,Active
@@ -9812,6 +9830,7 @@ SMST,Defiance Daily Target 2X Short MSTR ETF,NASDAQ,ETF,2024-08-21,null,Active
 SMTC,Semtech Corp,NASDAQ,Stock,1992-03-17,null,Active
 SMTH,ALPS | SMITH CORE PLUS BOND ETF ,NYSE ARCA,ETF,2023-12-06,null,Active
 SMTI,Sanara MedTech Inc,NASDAQ,Stock,2011-02-22,null,Active
+SMU,SIMULA INC,NYSE,Stock,2025-07-11,null,Active
 SMWB,Similarweb Ltd,NYSE,Stock,2021-05-12,null,Active
 SMX,SMX (Security Matters) Plc - Class A,NASDAQ,Stock,2021-12-09,null,Active
 SMXT,SolarMax Technology Inc,NASDAQ,Stock,2024-02-27,null,Active
@@ -10007,7 +10026,7 @@ SPVM,Invesco Russell Top 200 Pure Value ETF,NYSE ARCA,ETF,2011-06-16,null,Active
 SPVU,INVESCO S&P 500 ENHANCED VALUE ETF ,NYSE ARCA,ETF,2015-10-09,null,Active
 SPWH,Sportsman`s Warehouse Holdings Inc,NASDAQ,Stock,2014-04-17,null,Active
 SPWO,SP FUNDS S&P WORLD (EX-US) ETF ,NYSE ARCA,ETF,2023-12-20,null,Active
-SPWR,Complete Solaria Inc,NASDAQ,Stock,2021-04-19,null,Active
+SPWR,,NASDAQ,Stock,2024-08-21,null,Active
 SPWRW,Complete Solaria Inc - Warrants (31/07/2028),NASDAQ,Stock,2021-04-19,null,Active
 SPXC,SPX Technologies Inc,NYSE,Stock,1985-07-01,null,Active
 SPXE,PROSHARES S&P 500 EX-ENERGY ETF ,NYSE ARCA,ETF,2015-09-24,null,Active
