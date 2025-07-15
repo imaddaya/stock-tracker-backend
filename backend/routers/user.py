@@ -23,8 +23,8 @@ def get_profile(db: Session = Depends(get_db), current_user_email: str = Depends
     return {
         "email": user.email,
         "alpha_vantage_api_key": user.alpha_vantage_api_key,
-        "email_reminder_time": getattr(user, 'email_reminder_time', None),
-        "email_reminder_enabled": getattr(user, 'email_reminder_enabled', False)
+        "email_reminder_time": user.email_reminder_time,
+        "email_reminder_enabled": user.email_reminder_enabled
     }
 
 @router.put("/update-api-key")

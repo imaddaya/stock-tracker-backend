@@ -14,17 +14,25 @@ class EmailReminderRequest(BaseModel):
 @router.post("/reminder-settings")
 def set_email_reminder(request: EmailReminderRequest, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
     from models import UsersTable
+    import re
     
     user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Validate time format if provided
+    if request.reminder_time and request.enabled:
+        if not re.match(r'^([01]?[0-9]|2[0-3]):[0-5][0-9]$', request.reminder_time):
+            raise HTTPException(status_code=400, detail="Invalid time format. Use HH:MM format (e.g., 09:30)")
+    
     user.email_reminder_enabled = request.enabled
-    if request.reminder_time:
+    if request.reminder_time and request.enabled:
         user.email_reminder_time = request.reminder_time
+    elif not request.enabled:
+        user.email_reminder_time = None  # Clear time when disabled
     
     db.commit()
-    return {"message": "Email reminder settings updated"}
+    return {"message": "Email reminder settings updated successfully"}
 
 @router.get("/send-summary")
 def send_email_summary(db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
@@ -88,3 +96,12 @@ def send_email_summary(db: Session = Depends(get_db), current_user_email: str = 
     # Call utility to send email
     send_daily_summary_email(current_user_email, portfolio_summary)
     return {"message": "Email sent successfully"}
+
+@router.post("/test-send")
+def test_send_email(db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
+    """Test endpoint to manually send an email summary"""
+    try:
+        result = send_email_summary(db, current_user_email)
+        return {"message": "Test email sent successfully", "details": result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send test email: {str(e)}")
