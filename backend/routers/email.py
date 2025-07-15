@@ -4,17 +4,13 @@ from dependencies import get_current_user_email
 from database import get_db
 from utils.email import send_daily_summary_email
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from models import UsersTable, PortfoliosTable, StocksTable, StockDataCache
 from cruds import users as user_crud
+from schemas import EmailReminderRequest
 import re
 
 router = APIRouter(prefix="/email", tags=["email"])
 
-class EmailReminderRequest(BaseModel):
-    reminder_time: str = None
-    enabled: bool
-    timezone: str = "UTC"  # Default to UTC
 
 @router.post("/reminder-settings")
 def set_email_reminder(
@@ -42,7 +38,7 @@ def set_email_reminder(
         user.email_reminder_time = request.reminder_time
     elif not request.enabled:
         user.email_reminder_time = None  # Clear time when disabled
-    
+
     try:
         db.commit()
         return {

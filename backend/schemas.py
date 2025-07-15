@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, validator
+from typing import Optional
 import re
 
 class UserSignup(BaseModel):
@@ -74,3 +75,8 @@ class StockSummary(BaseModel):
     previous_close: float         
     change: float                   
     change_percent: str
+
+class EmailReminderRequest(BaseModel):
+    reminder_time: Optional[str] = None
+    enabled: bool
+    timezone: str = "UTC"  # Default to UTC
