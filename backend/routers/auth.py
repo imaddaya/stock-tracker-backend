@@ -93,9 +93,28 @@ def forgot_password(email_data: EmailSchema, db: Session = Depends(get_db)):
 
 
 @router.post("/reset-password")
-def reset_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
+def reset_password(data: dict, db: Session = Depends(get_db)):
     try:
-        payload = decode_token(data.token)
+        # Extract data from the request
+        token = data.get("token")
+        new_password = data.get("new_password")
+        
+        if not token or not new_password:
+            raise HTTPException(status_code=400, detail="Token and new password are required")
+        
+        # Validate password complexity
+        if len(new_password) < 8:
+            raise HTTPException(status_code=400, detail="Password must be at least 8 characters long")
+        if not any(c.isupper() for c in new_password):
+            raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in new_password):
+            raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in new_password):
+            raise HTTPException(status_code=400, detail="Password must contain at least one digit")
+        if not any(c in "!@#$%^&*" for c in new_password):
+            raise HTTPException(status_code=400, detail="Password must contain at least one special character (!@#$%^&*)")
+        
+        payload = decode_token(token)
         email = payload.get("email")
         if not email:
             raise HTTPException(status_code=400, detail="Invalid token")
@@ -104,7 +123,7 @@ def reset_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        hashed_pw = bcrypt.hashpw(data.new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+        hashed_pw = bcrypt.hashpw(new_password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
         user.hashed_password = hashed_pw
         db.commit()
         return {"message": "Password reset successfully"}
