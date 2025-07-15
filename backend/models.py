@@ -1,6 +1,7 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, Float, Integer, func, Column
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Float, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional
 from database import Base
 
 class UsersTable(Base): # Use capital letter for class name
@@ -11,7 +12,7 @@ class UsersTable(Base): # Use capital letter for class name
     hashed_password: Mapped[str] = mapped_column(String, nullable=False)
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     alpha_vantage_api_key: Mapped[str] = mapped_column(String(128), nullable=False)
-    email_reminder_time: Mapped[str] = mapped_column(String(10), nullable=True)  # Format: "HH:MM"
+    email_reminder_time: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # Format: "HH:MM"
     email_reminder_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String(50), nullable=True, default="UTC")  # e.g., 
     last_api_key_update: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
