@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, Float, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from database import Base
 
@@ -44,14 +44,14 @@ class StockDataCache(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users_table.id"), nullable=False)
     stock_symbol: Mapped[str] = mapped_column(String(20), nullable=False)
-    open_price: Mapped[float] = mapped_column(nullable=True)
-    high_price: Mapped[float] = mapped_column(nullable=True)
-    low_price: Mapped[float] = mapped_column(nullable=True)
-    current_price: Mapped[float] = mapped_column(nullable=True)
-    volume: Mapped[int] = mapped_column(nullable=True)
+    open_price: Mapped[float] = mapped_column(Float, nullable=True)
+    high_price: Mapped[float] = mapped_column(Float, nullable=True)
+    low_price: Mapped[float] = mapped_column(Float, nullable=True)
+    current_price: Mapped[float] = mapped_column(Float, nullable=True)
+    volume: Mapped[int] = mapped_column(Integer, nullable=True)
     latest_trading_day: Mapped[str] = mapped_column(String(20), nullable=True)
-    previous_close: Mapped[float] = mapped_column(nullable=True)
-    change: Mapped[float] = mapped_column(nullable=True)
+    previous_close: Mapped[float] = mapped_column(Float, nullable=True)
+    change: Mapped[float] = mapped_column(Float, nullable=True)
     change_percent: Mapped[str] = mapped_column(String(20), nullable=True)
     last_updated: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 #RELATIONSHIP BETWEEN TABLES

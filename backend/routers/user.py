@@ -8,6 +8,9 @@ from utils.email import send_email
 from utils.jwt import create_verification_token
 from pydantic import BaseModel
 from datetime import datetime
+from utils.jwt import create_verification_token
+from utils.email import send_account_deletion_email
+from datetime import timedelta
 
 router = APIRouter(prefix="/user", tags=["user"])
 
@@ -51,14 +54,11 @@ def initiate_account_deletion(db: Session = Depends(get_db), current_user_email:
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Create deletion token (30 minutes expiry)
-    from utils.jwt import create_verification_token
-    from utils.email import send_account_deletion_email
-    from datetime import timedelta
-    
+
     token = create_verification_token(user.email)  # This creates a 30-min token
     
     # Send deletion confirmation email
+    from utils.email import send_account_deletion_email
     send_account_deletion_email(user.email, token)
     
     return {"message": "Account deletion verification email sent. You have 30 minutes to confirm."}
@@ -89,15 +89,4 @@ def confirm_account_deletion(token: str, db: Session = Depends(get_db)):
     except JWTError:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-def send_account_deletion_email(email: str, token: str):
-    from config import FRONTEND_URL
-    deletion_link = f"{FRONTEND_URL}/confirm-account-deletion?token={token}"
-    html = f"""
-    <h3>⚠️ Account Deletion Confirmation</h3>
-    <p>You have requested to delete your account. This action is <strong>PERMANENT</strong> and cannot be undone.</p>
-    <p>Click the link below to permanently delete your account:</p>
-    <a href="{deletion_link}" style="color:#dc3545; font-weight: bold;">DELETE MY ACCOUNT PERMANENTLY</a>
-    <p><strong>This link will expire in 30 minutes.</strong></p>
-    <p>If you did not request this deletion, please ignore this email.</p>
-    """
-    send_email("🚨 Confirm Account Deletion", email, html)
+
