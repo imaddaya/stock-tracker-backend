@@ -131,19 +131,14 @@ def get_portfolio_summary(db: Session = Depends(get_db), current_user_email: str
 
 @router.post("/add", status_code=status.HTTP_201_CREATED)
 def add_stock_to_portfolio(ticker: StockSymbol, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
-    print(current_user_email)
-    print(ticker)
-    print(db)
     # Get user by email
     user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    print(user)
     # Get stock by symbol (uppercase to be safe)
     stock = db.query(StocksTable).filter(StocksTable.stock_symbol == ticker.stock_symbol.upper()).first()
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
-    print(stock)
     # Check if stock already in user's portfolio
     existing = db.query(PortfoliosTable).filter(
         PortfoliosTable.user_id == user.id,

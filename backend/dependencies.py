@@ -1,5 +1,5 @@
 from fastapi import Depends, HTTPException 
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials 
 from jose import JWTError
 from utils.jwt import decode_token
 
@@ -12,7 +12,6 @@ def get_current_user_email(credentials: HTTPAuthorizationCredentials = Depends(s
         email = payload.get("sub")
         if not isinstance(email, str):
             raise HTTPException(status_code=401, detail="Invalid token")
-        print(isinstance(email, str))
         return email
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")

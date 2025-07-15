@@ -3,10 +3,9 @@ from models import PortfoliosTable, UsersTable, StocksTable
 
 def get_user_portfolio(db: Session, user_email: str):
     user = db.query(UsersTable).filter(UsersTable.email == user_email).first()
-    print(user)
     if not user:
         return []
-        
+
     return (
         db.query(PortfoliosTable)
         .filter(PortfoliosTable.user_id == user.id)
@@ -32,6 +31,9 @@ def add_stock_to_portfolio(db: Session, user_email: str, ticker: str):
     db.add(new_entry)
     db.commit()
     db.refresh(new_entry)
+    
+    
+
     return new_entry
 
 def remove_stock_from_portfolio(db: Session, user_email: str, ticker: str):
