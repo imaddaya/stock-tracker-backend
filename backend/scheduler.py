@@ -1,50 +1,3 @@
-
-import schedule
-import time
-import threading
-from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from database import get_db
-from models import UsersTable
-from utils.email import send_daily_summary_email
-from routers.email import send_email_summary
-
-def send_daily_emails():
-    """Send daily summary emails to users whose reminder time has arrived"""
-    db = next(get_db())
-    
-    # Get current time in HH:MM format
-    current_time = datetime.now().strftime("%H:%M")
-    
-    # Get users with email reminders enabled and matching reminder time
-    users = db.query(UsersTable).filter(
-        UsersTable.email_reminder_enabled == True,
-        UsersTable.email_reminder_time == current_time
-    ).all()
-    
-    for user in users:
-        try:
-            # Call the same function used in the API endpoint
-            send_email_summary(db, user.email)
-            print(f"✅ Daily email sent to {user.email} at {current_time}")
-        except Exception as e:
-            print(f"❌ Failed to send email to {user.email}: {e}")
-    
-    db.close()
-
-def start_scheduler():
-    """Start the background scheduler that checks every minute"""
-    # Schedule to run every minute to check for user-specific times
-    schedule.every().minute.do(send_daily_emails)
-    
-    def run_scheduler():
-        while True:
-            schedule.run_pending()
-            time.sleep(60)  # Check every minute
-    
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    print("📅 Email scheduler started - checking user reminder times every minute")
 import schedule
 import time
 import threading
@@ -55,34 +8,45 @@ from models import UsersTable, PortfoliosTable, StocksTable, StockDataCache
 from utils.email import send_daily_summary_email
 
 def send_scheduled_emails():
-    """Send emails to users based on their scheduled reminder times"""
+    """Send daily summary emails to users based on their scheduled reminder times"""
     db: Session = SessionLocal()
     try:
+        # Get current time in HH:MM format
         current_time = datetime.now().strftime("%H:%M")
-        
+
         # Find users with email reminders enabled for current time
         users = db.query(UsersTable).filter(
             UsersTable.email_reminder_enabled == True,
             UsersTable.email_reminder_time == current_time
         ).all()
-        
+
+        print(f"🕐 Checking scheduled emails at {current_time} - Found {len(users)} users")
+
         for user in users:
             try:
-                # Get portfolio stocks for this user
-                portfolio = db.query(PortfoliosTable).filter(PortfoliosTable.user_id == user.id).all()
+                # Get user's portfolio stocks
+                portfolio = db.query(PortfoliosTable).filter(
+                    PortfoliosTable.user_id == user.id
+                ).all()
+
                 if not portfolio:
+                    print(f"⚠️ User {user.email} has empty portfolio - skipping email")
                     continue
 
                 # Prepare portfolio summary with cached stock data
                 portfolio_summary = []
                 for entry in portfolio:
-                    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == entry.stock_symbol).first()
+                    stock = db.query(StocksTable).filter(
+                        StocksTable.stock_symbol == entry.stock_symbol
+                    ).first()
+
                     if stock:
+                        # Get cached stock data for this user and stock
                         cached_data = db.query(StockDataCache).filter(
                             StockDataCache.user_id == user.id,
                             StockDataCache.stock_symbol == stock.stock_symbol
                         ).first()
-                        
+
                         if cached_data:
                             portfolio_summary.append({
                                 "ticker": stock.stock_symbol,
@@ -98,6 +62,7 @@ def send_scheduled_emails():
                                 "previous_close": f"${cached_data.previous_close:.2f}"
                             })
                         else:
+                            # Include stock but mark data as unavailable
                             portfolio_summary.append({
                                 "ticker": stock.stock_symbol,
                                 "name": stock.stock_company_name,
@@ -112,29 +77,43 @@ def send_scheduled_emails():
                                 "previous_close": "N/A"
                             })
 
+                # Send email if we have portfolio data
                 if portfolio_summary:
                     send_daily_summary_email(user.email, portfolio_summary)
-                    print(f"📧 Sent scheduled email to {user.email} at {current_time}")
-                    
+                    print(f"📧 Sent scheduled email to {user.email} at {current_time} ({len(portfolio_summary)} stocks)")
+                else:
+                    print(f"⚠️ No portfolio data available for {user.email} - skipping email")
+
             except Exception as e:
-                print(f"❌ Failed to send email to {user.email}: {e}")
-                
+                print(f"❌ Failed to send scheduled email to {user.email}: {str(e)}")
+
     except Exception as e:
-        print(f"❌ Scheduler error: {e}")
+        print(f"❌ Scheduler error: {str(e)}")
     finally:
         db.close()
 
 def run_scheduler():
-    """Run the scheduler in a separate thread"""
-    # Check every minute for users who need emails
+    """Run the scheduler in a background thread"""
+    # Schedule to check every minute for users who need emails
     schedule.every().minute.do(send_scheduled_emails)
-    
+
+    print("📅 Email scheduler running - checking every minute for scheduled emails")
+
     while True:
-        schedule.run_pending()
-        time.sleep(1)
+        try:
+            schedule.run_pending()
+            time.sleep(1)  # Check every second for pending jobs
+        except Exception as e:
+            print(f"❌ Scheduler thread error: {str(e)}")
+            time.sleep(60)  # Wait a minute before retrying
 
 def start_scheduler():
-    """Start the email scheduler in a background thread"""
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
-    print("📅 Email scheduler started - checking user reminder times every minute")
+    """Start the email scheduler in a background daemon thread"""
+    try:
+        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+        scheduler_thread.start()
+        print("🚀 Email scheduler started successfully")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to start email scheduler: {str(e)}")
+        return False

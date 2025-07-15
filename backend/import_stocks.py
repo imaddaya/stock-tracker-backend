@@ -44,4 +44,4 @@ if __name__ == "__main__":
     if os.path.exists(CSV_FILE):
         os.remove(CSV_FILE)
     download_csv()
-    import_csvfile_to_db()o_db()
+    import_csvfile_to_db()

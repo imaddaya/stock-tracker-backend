@@ -36,7 +36,7 @@ def set_email_reminder(
     
     # Update user settings
     user.email_reminder_enabled = request.enabled
-    if request.reminder_time and request.enabled:
+    if request.enabled and request.reminder_time:
         user.email_reminder_time = request.reminder_time
     elif not request.enabled:
         user.email_reminder_time = None  # Clear time when disabled
