@@ -17,6 +17,9 @@ def send_daily_emails():
     
     for user in users:
         try:
+            # Import the email route function
+            from routers.email import send_email_summary
+            
             # Call the same function used in the API endpoint
             send_email_summary(db, user.email)
             print(f"✅ Daily email sent to {user.email}")

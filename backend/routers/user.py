@@ -11,10 +11,6 @@ from datetime import datetime
 
 router = APIRouter(prefix="/user", tags=["user"])
 
-class EmailReminderRequest(BaseModel):
-    reminder_time: str = None
-    enabled: bool
-
 class UpdateApiKeyRequest(BaseModel):
     new_api_key: str
 
@@ -30,19 +26,6 @@ def get_profile(db: Session = Depends(get_db), current_user_email: str = Depends
         "email_reminder_time": getattr(user, 'email_reminder_time', None),
         "email_reminder_enabled": getattr(user, 'email_reminder_enabled', False)
     }
-
-@router.post("/email-reminder")
-def set_email_reminder(request: EmailReminderRequest, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
-    user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    user.email_reminder_enabled = request.enabled
-    if request.reminder_time:
-        user.email_reminder_time = request.reminder_time
-    
-    db.commit()
-    return {"message": "Email reminder settings updated"}
 
 @router.put("/update-api-key")
 def update_api_key(request: UpdateApiKeyRequest, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):

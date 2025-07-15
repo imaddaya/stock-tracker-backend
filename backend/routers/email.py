@@ -1,11 +1,31 @@
-from fastapi import APIRouter, Depends , HTTPException
+
+from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_current_user_email
-from cruds import portfolios as portfolio_crud
 from database import get_db
 from utils.email import send_daily_summary_email
-from sqlalchemy.orm import Session    
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/email", tags=["email"])
+
+class EmailReminderRequest(BaseModel):
+    reminder_time: str = None
+    enabled: bool
+
+@router.post("/reminder-settings")
+def set_email_reminder(request: EmailReminderRequest, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
+    from models import UsersTable
+    
+    user = db.query(UsersTable).filter(UsersTable.email == current_user_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    user.email_reminder_enabled = request.enabled
+    if request.reminder_time:
+        user.email_reminder_time = request.reminder_time
+    
+    db.commit()
+    return {"message": "Email reminder settings updated"}
 
 @router.get("/send-summary")
 def send_email_summary(db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
@@ -39,7 +59,13 @@ def send_email_summary(db: Session = Depends(get_db), current_user_email: str = 
                     "name": stock.stock_company_name,
                     "price": f"${cached_data.current_price:.2f}",
                     "change_percent": cached_data.change_percent,
-                    "change": f"${cached_data.change:.2f}"
+                    "change": f"${cached_data.change:.2f}",
+                    "open": f"${cached_data.open_price:.2f}",
+                    "high": f"${cached_data.high_price:.2f}",
+                    "low": f"${cached_data.low_price:.2f}",
+                    "volume": f"{cached_data.volume:,}",
+                    "latest_trading_day": cached_data.latest_trading_day,
+                    "previous_close": f"${cached_data.previous_close:.2f}"
                 })
             else:
                 # If no cached data, include stock but mark as N/A
@@ -48,7 +74,13 @@ def send_email_summary(db: Session = Depends(get_db), current_user_email: str = 
                     "name": stock.stock_company_name,
                     "price": "N/A",
                     "change_percent": "N/A",
-                    "change": "N/A"
+                    "change": "N/A",
+                    "open": "N/A",
+                    "high": "N/A",
+                    "low": "N/A",
+                    "volume": "N/A",
+                    "latest_trading_day": "N/A",
+                    "previous_close": "N/A"
                 })
 
     if not portfolio_summary:
