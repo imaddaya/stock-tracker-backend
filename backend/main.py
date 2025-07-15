@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import engine
 from models import Base
 from routers import auth, portfolio, stock_search, email, user
+from scheduler import start_scheduler
 
 
 
@@ -27,6 +28,8 @@ app.include_router(portfolio.router)
 app.include_router(stock_search.router)
 app.include_router(user.router)
 
+# Start the email scheduler
+start_scheduler()
 
 @app.get("/")
 def root():

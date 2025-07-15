@@ -54,13 +54,28 @@ def send_account_deletion_email(email: str, token: str):
     send_email("🚨 Confirm Account Deletion", email, html)
 
 def send_daily_summary_email(email: str, portfolio_summary: list):
-    html = "<h3>📈 Daily Stock Summary</h3>"
-    html += "<table border='1' cellpadding='6' cellspacing='0'>"
-    html += "<tr><th>Ticker</th><th>Price</th><th>Change %</th></tr>"
+    html = "<h3>📈 Daily Stock Portfolio Summary</h3>"
+    html += "<p>Here's your daily portfolio update:</p>"
+    html += "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse; width: 100%;'>"
+    html += "<tr style='background-color: #f2f2f2;'><th>Ticker</th><th>Company</th><th>Current Price</th><th>Change ($)</th><th>Change (%)</th></tr>"
 
     for stock in portfolio_summary:
-        html += f"<tr><td>{stock.get('ticker')}</td><td>{stock.get('price')}</td><td>{stock.get('change_percent')}</td></tr>"
+        # Color coding for positive/negative changes
+        change_color = "green" if stock.get('change_percent', 'N/A') != 'N/A' and not stock.get('change_percent').startswith('-') else "red"
+        if stock.get('change_percent') == 'N/A':
+            change_color = "gray"
+            
+        html += f"""
+        <tr>
+            <td><strong>{stock.get('ticker', 'N/A')}</strong></td>
+            <td>{stock.get('name', 'N/A')}</td>
+            <td>{stock.get('price', 'N/A')}</td>
+            <td style='color: {change_color};'>{stock.get('change', 'N/A')}</td>
+            <td style='color: {change_color};'>{stock.get('change_percent', 'N/A')}</td>
+        </tr>
+        """
 
     html += "</table>"
+    html += "<br><p><small>Data may be delayed. For real-time quotes, please visit your portfolio dashboard.</small></p>"
 
     send_email("📊 Daily Stock Portfolio Summary", email, html)
