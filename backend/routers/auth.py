@@ -110,3 +110,26 @@ def reset_password(data: PasswordResetRequest, db: Session = Depends(get_db)):
         return {"message": "Password reset successfully"}
     except JWTError:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+@router.get("/confirm-account-deletion")
+def confirm_account_deletion(token: str, db: Session = Depends(get_db)):
+    try:
+        payload = decode_token(token)
+        email = payload.get("email")
+        token_type = payload.get("type")
+        
+        if not email or token_type != "account_deletion":
+            raise HTTPException(status_code=400, detail="Invalid token")
+        
+        user = user_crud.get_user_by_email(db, email)
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Delete user and all related data
+        db.delete(user)
+        db.commit()
+        
+        return {"message": "Account deleted successfully"}
+        
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
