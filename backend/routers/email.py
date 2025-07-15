@@ -1,4 +1,3 @@
-
 from fastapi import APIRouter, Depends, HTTPException
 from dependencies import get_current_user_email
 from database import get_db
