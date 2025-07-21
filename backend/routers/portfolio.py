@@ -1,7 +1,7 @@
 from models import StocksTable, PortfoliosTable , UsersTable, StockDataCache
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from schemas import StockSymbol, StockSummary
+from schemas import StockSymbol, StockSummary, WeeklyStockData
 from cruds import users as user_crud
 from database import get_db
 from dependencies import get_current_user_email
@@ -9,6 +9,77 @@ import httpx
 from sqlalchemy import func
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
+
+@router.get("/weekly-data/{symbol}", response_model=WeeklyStockData)
+def get_weekly_stock_data(symbol: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
+    user = user_crud.get_user_by_email(db, current_user_email)
+    if not user or not user.alpha_vantage_api_key:
+        raise HTTPException(status_code=400, detail="Alpha Vantage API key not set")
+
+    # Check if stock exists in user's portfolio
+    portfolio_entry = db.query(PortfoliosTable).filter(
+        PortfoliosTable.user_id == user.id,
+        PortfoliosTable.stock_symbol == symbol.upper()
+    ).first()
+    
+    if not portfolio_entry:
+        raise HTTPException(status_code=404, detail="Stock not found in your portfolio")
+
+    # Check if stock exists in our database
+    stock = db.query(StocksTable).filter(StocksTable.stock_symbol == symbol.upper()).first()
+    if not stock:
+        raise HTTPException(status_code=404, detail="Stock not found")
+
+    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol={stock.stock_symbol}&apikey={user.alpha_vantage_api_key}"
+
+    try:
+        response = httpx.get(url, timeout=15)
+        data = response.json()
+        
+        if response.status_code != 200:
+            raise HTTPException(status_code=502, detail="Stock API error")
+        
+        # Check for API error messages
+        if "Error Message" in data:
+            raise HTTPException(status_code=400, detail="Invalid stock symbol")
+        
+        if "Note" in data:
+            raise HTTPException(status_code=429, detail="API call frequency limit reached")
+        
+        # Extract weekly time series data
+        weekly_data = data.get("Weekly Adjusted Time Series", {})
+        if not weekly_data:
+            raise HTTPException(status_code=404, detail="No weekly data available for this stock")
+
+        # Format the response data
+        formatted_data = []
+        for date, values in weekly_data.items():
+            formatted_data.append({
+                "date": date,
+                "open": float(values["1. open"]),
+                "high": float(values["2. high"]),
+                "low": float(values["3. low"]),
+                "close": float(values["4. close"]),
+                "adjusted_close": float(values["5. adjusted close"]),
+                "volume": int(values["6. volume"]),
+                "dividend_amount": float(values["7. dividend amount"])
+            })
+
+        # Sort by date (most recent first)
+        formatted_data.sort(key=lambda x: x["date"], reverse=True)
+
+        return {
+            "symbol": stock.stock_symbol,
+            "name": stock.stock_company_name,
+            "metadata": data.get("Meta Data", {}),
+            "weekly_data": formatted_data[:52]  # Return last 52 weeks (1 year)
+        }
+
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="Request timeout - API service unavailable")
+    except Exception as e:
+        print(f"❌ Failed to fetch weekly data for {stock.stock_symbol}: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.get("/summary/{symbol}", response_model = StockSummary)
 def get_stock_summary(symbol: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email),):

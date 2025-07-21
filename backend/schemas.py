@@ -76,6 +76,22 @@ class StockSummary(BaseModel):
     change: float                   
     change_percent: str
 
+class WeeklyDataPoint(BaseModel):
+    date: str
+    open: float
+    high: float
+    low: float
+    close: float
+    adjusted_close: float
+    volume: int
+    dividend_amount: float
+
+class WeeklyStockData(BaseModel):
+    symbol: str
+    name: str
+    metadata: dict
+    weekly_data: list[WeeklyDataPoint]
+
 class EmailReminderRequest(BaseModel):
     reminder_time: Optional[str] = None
     enabled: bool
