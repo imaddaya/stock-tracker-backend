@@ -143,7 +143,7 @@ def get_monthly_stock_data(symbol: str, db: Session = Depends(get_db), current_u
             "symbol": stock.stock_symbol,
             "name": stock.stock_company_name,
             "metadata": data.get("Meta Data", {}),
-            "weekly_data": formatted_data[:60]  # Return last 60 months (5 years)
+            "weekly_data": formatted_data  # Return all available historical data
         }
 
     except httpx.TimeoutException:
