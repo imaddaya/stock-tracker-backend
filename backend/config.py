@@ -8,7 +8,6 @@ load_dotenv()
 class Settings(BaseSettings):
     EMAIL_ADDRESS: str = os.environ["EMAIL_ADDRESS"]
     EMAIL_PASSWORD: str = os.environ["EMAIL_PASSWORD"]
-    TO_EMAIL: str = os.environ["TO_EMAIL"]
     ALPHA_VANTAGE_API_KEY: str = os.environ["ALPHA_VANTAGE_API_KEY"]
     JWT_ALGORITHM: str = os.environ["JWT_ALGORITHM"]
     JWT_SECRET: str = os.environ["JWT_SECRET"]
