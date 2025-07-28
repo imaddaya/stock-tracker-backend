@@ -21,7 +21,7 @@ git clone https://github.com/your-username/stock-portfolio-tracker-backend.git
 
 ### 🔧 Backend Setup
 
-🖥️ In **Terminal**, run:
+🖥️ Change directory to where you cloned your backend repo:
 
 ```bash
 cd stock-portfolio-tracker-backend
