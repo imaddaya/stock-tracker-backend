@@ -4,7 +4,6 @@ A user-friendly **FastAPI-based stock portfolio management system** that helps y
 
 ## 🛠️ Prerequisites
 
-- Node.js and npm  
 - Python 3.11 or higher  
 - VS Code installed  
 - Git  
@@ -14,14 +13,13 @@ A user-friendly **FastAPI-based stock portfolio management system** that helps y
 
 ## ⚙️ Installation / Setup
 
-### 📁 Step 1: Clone the Repository
+### 📁 Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/stock-portfolio-tracker-backend.git
 ```
----
 
-### 🔧 Step 2: Backend Setup
+### 🔧 Backend Setup
 
 🖥️ In **Terminal**, run:
 
