@@ -2,20 +2,23 @@ from datetime import datetime, timedelta
 from jose import jwt, JWTError, ExpiredSignatureError
 from fastapi import HTTPException
 import os
+from config import get_settings
+
+settings = get_settings()
 
 # JWT settings
-JWT_SECRET = os.environ["JWT_SECRET"]  
-JWT_ALGORITHM = "HS256"
+JWT_SECRET = os.environ["JWT_SECRET"]
+JWT_ALGORITHM = os.environ["JWT_ALGORITHM"]
 
 def create_token(data: dict, expires_delta: timedelta):
     to_encode = data.copy()
     expire = datetime.utcnow() + expires_delta
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    return jwt.encode(to_encode, settings.JWT_SECRET, algorithm=settings.JWT_ALGORITHM)
 
 def decode_token(token: str):
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
         return payload
     except ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")

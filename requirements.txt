@@ -1,0 +1,14 @@
+bcrypt>=4.3.0
+dcbase>=1.13.5
+email-validator>=2.2.0
+fastapi>=0.115.14
+httpx>=0.28.1
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+pydantic>=2.11.7
+pytz>=2025.2
+schedule>=1.2.2
+sqlalchemy>=2.0.41
+uvicorn>=0.15.0
+python-dotenv>=1.0.1
+pydantic-settings>=2.10.1

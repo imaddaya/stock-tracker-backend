@@ -4,8 +4,9 @@ from database import engine
 from models import Base
 from routers import auth, portfolio, stock_search, email, user
 from scheduler import start_scheduler
+from config import get_settings
 
-
+settings = get_settings()
 
 # create the databasu
 Base.metadata.create_all(bind=engine)

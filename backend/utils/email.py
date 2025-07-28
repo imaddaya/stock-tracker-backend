@@ -1,29 +1,27 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-import os
-from config import FRONTEND_URL  
+from config import get_settings
 
-EMAIL_ADDRESS = os.environ["EMAIL_ADDRESS"]
-EMAIL_PASSWORD = os.environ["EMAIL_PASSWORD"]
+settings = get_settings()
 
 def send_email(subject: str, recipient: str, html_content: str):
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
-    message["From"] = EMAIL_ADDRESS
+    message["From"] = settings.EMAIL_ADDRESS
     message["To"] = recipient
     message.attach(MIMEText(html_content, "html"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)  # ✅ Now both are safe strings
-            server.sendmail(EMAIL_ADDRESS, recipient, message.as_string())
+            server.login(settings.EMAIL_ADDRESS,settings.EMAIL_PASSWORD)  # ✅ Now both are safe strings
+            server.sendmail(settings.EMAIL_ADDRESS, recipient, message.as_string())
     except Exception as e:
         print(f"Failed to send email to {recipient}: {e}")
         raise
 
 def send_verification_email(email: str, token: str):
-    verification_link = f"{FRONTEND_URL}/email-verified?token={token}"
+    verification_link = f"{settings.FRONTEND_URL}/email-verified?token={token}"
     html = f"""
     <h3>Verify your email</h3>
     <p>Click the link below to verify your email address:</p>
@@ -32,7 +30,7 @@ def send_verification_email(email: str, token: str):
     send_email("Please verify your email", email, html)
 
 def send_password_reset_email(email: str, token: str):
-    reset_link = f"{FRONTEND_URL}/reset-password?token={token}"
+    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
     html = f"""
     <h3>Reset your password</h3>
     <p>Click the link below to reset your password:</p>
@@ -42,7 +40,7 @@ def send_password_reset_email(email: str, token: str):
     send_email("Reset your password", email, html)
 
 def send_account_deletion_email(email: str, token: str):
-    deletion_link = f"{FRONTEND_URL}/confirm-account-deletion?token={token}"
+    deletion_link = f"{settings.FRONTEND_URL}/confirm-account-deletion?token={token}"
     html = f"""
     <h3>⚠️ Account Deletion Confirmation</h3>
     <p>You have requested to delete your account. This action is <strong>PERMANENT</strong> and cannot be undone.</p>
