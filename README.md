@@ -13,13 +13,11 @@ A user-friendly **FastAPI-based stock portfolio management system** that helps y
 
 ## ⚙️ Installation / Setup
 
-### 📁 Clone the Repository
+📁 Clone the Repository
 
 ```bash
 git clone https://github.com/your-username/stock-portfolio-tracker-backend.git
 ```
-
-### 🔧 Backend Setup
 
 🖥️ Change directory to where you cloned your backend repo:
 
