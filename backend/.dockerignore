@@ -1,0 +1,25 @@
+# Ignore virtual environment folder
+venv/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SQLite database files (if any)
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment files (for security)
+.env
+
+# Git metadata
+.git/
+.gitignore
+
+# Docker-related files (optional)
+Dockerfile
+README.md
