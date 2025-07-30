@@ -1,10 +1,13 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from config import get_settings
 
-DATABASE_URL = "sqlite:///./stocks.db"
+settings = get_settings()
 
+# ✅ No need for check_same_thread anymore
 engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}
+    settings.DATABASE_URL,
+    echo=False  # optional: prints SQL statements to console
 )
 
 SessionLocal = sessionmaker(
@@ -15,7 +18,7 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
-# ✅ Add this function so FastAPI can inject DB session
+# ✅ Dependency to get a DB session
 def get_db():
     db: Session = SessionLocal()
     try:

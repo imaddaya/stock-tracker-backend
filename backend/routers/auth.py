@@ -13,31 +13,16 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/signup")
 def signup(user: UserSignup, db: Session = Depends(get_db)):
-    
-    print(f"information about the user     : {user}\n")
-    print("we start by checking passwords:")
-    print(f"user.password is         : {user.password}")
-    print(f"user.confirm_password is : {user.confirm_password}")
-    print(f"check if user.password(1) is the same as user.confirm_password(2) : {user.password ==user.confirm_password}\n")
-    print("if True we move on to check if the user already exists:\n")
-    
+
     if user.password != user.confirm_password:
         raise HTTPException(status_code=400, detail="Passwords do not match")
-    
-    print(f"we will go through the database looking for the email : {user.email}")
-    print("if we find it we will raise an error saying that the user already exists")
-    print("if we don't find it we will create the user\n")
     
     if user_crud.get_user_by_email(db, user.email):
         raise HTTPException(status_code=400, detail="User already exists")
 
     db_user = user_crud.create_user(db, user)
-
-    print(f"user created successfully at: {db_user}")
     
     token = create_verification_token(db_user.email)
-
-    print(f"token is : {token}")
     
     send_verification_email(db_user.email, token)
     

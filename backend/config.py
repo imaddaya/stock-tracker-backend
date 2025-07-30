@@ -12,7 +12,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = os.environ["JWT_ALGORITHM"]
     JWT_SECRET: str = os.environ["JWT_SECRET"]
     FRONTEND_URL: str = os.environ.get("FRONTEND_URL","http://127.0.0.1:3000")
-    BACKEND_URL: str = os.environ.get("BACKEND_URL", "http://127.0.0.1:8000")
+    DATABASE_URL: str = os.environ.get("DATABASE_URL", "postgresql://postgres:***REMOVED***@localhost:5432/stocks")
+
 
 @lru_cache
 def get_settings():
