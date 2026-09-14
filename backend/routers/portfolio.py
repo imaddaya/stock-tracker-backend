@@ -21,7 +21,7 @@ def get_weekly_stock_data(symbol: str, db: Session = Depends(get_db), current_us
         PortfoliosTable.user_id == user.id,
         PortfoliosTable.stock_symbol == symbol.upper()
     ).first()
-    
+
     if not portfolio_entry:
         raise HTTPException(status_code=404, detail="Stock not found in your portfolio")
 
@@ -30,22 +30,29 @@ def get_weekly_stock_data(symbol: str, db: Session = Depends(get_db), current_us
     if not stock:
         raise HTTPException(status_code=404, detail="Stock not found")
 
-    url = f"https://www.alphavantage.co/query?function=TIME_SERIES_WEEKLY_ADJUSTED&symbol={stock.stock_symbol}&apikey={user.alpha_vantage_api_key}"
-
     try:
-        response = httpx.get(url, timeout=15)
+        response = httpx.get(
+            "https://www.alphavantage.co/query",
+            params={
+                "function": "TIME_SERIES_WEEKLY_ADJUSTED",
+                "symbol": stock.stock_symbol,
+                "apikey": user.alpha_vantage_api_key,
+            },
+            timeout=15,
+        )
+
         data = response.json()
-        
+
         if response.status_code != 200:
             raise HTTPException(status_code=502, detail="Stock API error")
-        
+
         # Check for API error messages
         if "Error Message" in data:
             raise HTTPException(status_code=400, detail="Invalid stock symbol")
-        
+
         if "Note" in data:
             raise HTTPException(status_code=429, detail="API call frequency limit reached")
-        
+
         # Extract weekly time series data
         weekly_data = data.get("Weekly Adjusted Time Series", {})
         if not weekly_data:
@@ -75,11 +82,37 @@ def get_weekly_stock_data(symbol: str, db: Session = Depends(get_db), current_us
             "weekly_data": formatted_data[:52]  # Return last 52 weeks (1 year)
         }
 
+    except HTTPException:
+        raise
+
     except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="Request timeout - API service unavailable")
-    except Exception as e:
-        print(f"❌ Failed to fetch weekly data for {stock.stock_symbol}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="Request timeout - API service unavailable",
+        )
+
+    except httpx.HTTPError:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to communicate with stock data provider",
+        )
+
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Invalid response received from stock data provider",
+        )
+
+    except Exception as exc:
+        print(
+            f"Failed to fetch weekly data "
+            f"for {stock.stock_symbol}: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error",
+        )
 
 @router.get("/monthly-data/{symbol}", response_model=WeeklyStockData)
 def get_monthly_stock_data(symbol: str, db: Session = Depends(get_db), current_user_email: str = Depends(get_current_user_email)):
@@ -92,7 +125,7 @@ def get_monthly_stock_data(symbol: str, db: Session = Depends(get_db), current_u
         PortfoliosTable.user_id == user.id,
         PortfoliosTable.stock_symbol == symbol.upper()
     ).first()
-    
+
     if not portfolio_entry:
         raise HTTPException(status_code=404, detail="Stock not found in your portfolio")
 
@@ -106,17 +139,17 @@ def get_monthly_stock_data(symbol: str, db: Session = Depends(get_db), current_u
     try:
         response = httpx.get(url, timeout=15)
         data = response.json()
-        
+
         if response.status_code != 200:
             raise HTTPException(status_code=502, detail="Stock API error")
-        
+
         # Check for API error messages
         if "Error Message" in data:
             raise HTTPException(status_code=400, detail="Invalid stock symbol")
-        
+
         if "Note" in data:
             raise HTTPException(status_code=429, detail="API call frequency limit reached")
-        
+
         # Extract monthly time series data
         monthly_data = data.get("Monthly Adjusted Time Series", {})
         if not monthly_data:
