@@ -22,6 +22,28 @@ router = APIRouter(
 )
 
 
+def update_cache_from_summary(
+    cache: StockDataCache,
+    response_data: dict,
+) -> None:
+    cache.open_price = response_data["open"]
+    cache.high_price = response_data["high"]
+    cache.low_price = response_data["low"]
+    cache.current_price = response_data["price"]
+    cache.volume = response_data["volume"]
+    cache.latest_trading_day = response_data[
+        "latest_trading_day"
+    ]
+    cache.previous_close = response_data[
+        "previous_close"
+    ]
+    cache.change = response_data["change"]
+    cache.change_percent = response_data[
+        "change_percent"
+    ]
+    cache.last_updated = func.now()
+
+
 @router.get(
     "/weekly-data/{symbol}",
     response_model=WeeklyStockData,
@@ -29,7 +51,9 @@ router = APIRouter(
 def get_weekly_stock_data(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = user_crud.get_user_by_email(
         db,
@@ -48,11 +72,14 @@ def get_weekly_stock_data(
             detail="Alpha Vantage API key not set",
         )
 
+    normalized_symbol = symbol.upper()
+
     portfolio_entry = (
         db.query(PortfoliosTable)
         .filter(
             PortfoliosTable.user_id == user.id,
-            PortfoliosTable.stock_symbol == symbol.upper(),
+            PortfoliosTable.stock_symbol
+            == normalized_symbol,
         )
         .first()
     )
@@ -66,7 +93,8 @@ def get_weekly_stock_data(
     stock = (
         db.query(StocksTable)
         .filter(
-            StocksTable.stock_symbol == symbol.upper()
+            StocksTable.stock_symbol
+            == normalized_symbol
         )
         .first()
     )
@@ -81,7 +109,9 @@ def get_weekly_stock_data(
         response = httpx.get(
             "https://www.alphavantage.co/query",
             params={
-                "function": "TIME_SERIES_WEEKLY_ADJUSTED",
+                "function": (
+                    "TIME_SERIES_WEEKLY_ADJUSTED"
+                ),
                 "symbol": stock.stock_symbol,
                 "apikey": user.alpha_vantage_api_key,
             },
@@ -102,10 +132,17 @@ def get_weekly_stock_data(
                 detail="Invalid stock symbol",
             )
 
-        if "Note" in data or "Information" in data:
+        if (
+            "Note" in data
+            or "Information" in data
+        ):
             raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="API call frequency limit reached",
+                status_code=(
+                    status.HTTP_429_TOO_MANY_REQUESTS
+                ),
+                detail=(
+                    "API call frequency limit reached"
+                ),
             )
 
         weekly_data = data.get(
@@ -116,7 +153,10 @@ def get_weekly_stock_data(
         if not weekly_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No weekly data available for this stock",
+                detail=(
+                    "No weekly data available "
+                    "for this stock"
+                ),
             )
 
         formatted_data = []
@@ -125,16 +165,30 @@ def get_weekly_stock_data(
             formatted_data.append(
                 {
                     "date": date,
-                    "open": float(values["1. open"]),
-                    "high": float(values["2. high"]),
-                    "low": float(values["3. low"]),
-                    "close": float(values["4. close"]),
-                    "adjusted_close": float(
-                        values["5. adjusted close"]
+                    "open": float(
+                        values["1. open"]
                     ),
-                    "volume": int(values["6. volume"]),
+                    "high": float(
+                        values["2. high"]
+                    ),
+                    "low": float(
+                        values["3. low"]
+                    ),
+                    "close": float(
+                        values["4. close"]
+                    ),
+                    "adjusted_close": float(
+                        values[
+                            "5. adjusted close"
+                        ]
+                    ),
+                    "volume": int(
+                        values["6. volume"]
+                    ),
                     "dividend_amount": float(
-                        values["7. dividend amount"]
+                        values[
+                            "7. dividend amount"
+                        ]
                     ),
                 }
             )
@@ -147,7 +201,10 @@ def get_weekly_stock_data(
         return {
             "symbol": stock.stock_symbol,
             "name": stock.stock_company_name,
-            "metadata": data.get("Meta Data", {}),
+            "metadata": data.get(
+                "Meta Data",
+                {},
+            ),
             "weekly_data": formatted_data[:52],
         }
 
@@ -156,20 +213,31 @@ def get_weekly_stock_data(
 
     except httpx.TimeoutException:
         raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Request timeout - API service unavailable",
+            status_code=(
+                status.HTTP_504_GATEWAY_TIMEOUT
+            ),
+            detail=(
+                "Request timeout - "
+                "API service unavailable"
+            ),
         )
 
     except httpx.HTTPError:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to communicate with stock data provider",
+            detail=(
+                "Failed to communicate with "
+                "stock data provider"
+            ),
         )
 
     except (KeyError, TypeError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Invalid response received from stock data provider",
+            detail=(
+                "Invalid response received from "
+                "stock data provider"
+            ),
         )
 
     except Exception as exc:
@@ -179,7 +247,9 @@ def get_weekly_stock_data(
         )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=(
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
             detail="Internal server error",
         )
 
@@ -191,7 +261,9 @@ def get_weekly_stock_data(
 def get_monthly_stock_data(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = user_crud.get_user_by_email(
         db,
@@ -210,11 +282,14 @@ def get_monthly_stock_data(
             detail="Alpha Vantage API key not set",
         )
 
+    normalized_symbol = symbol.upper()
+
     portfolio_entry = (
         db.query(PortfoliosTable)
         .filter(
             PortfoliosTable.user_id == user.id,
-            PortfoliosTable.stock_symbol == symbol.upper(),
+            PortfoliosTable.stock_symbol
+            == normalized_symbol,
         )
         .first()
     )
@@ -228,7 +303,8 @@ def get_monthly_stock_data(
     stock = (
         db.query(StocksTable)
         .filter(
-            StocksTable.stock_symbol == symbol.upper()
+            StocksTable.stock_symbol
+            == normalized_symbol
         )
         .first()
     )
@@ -243,7 +319,9 @@ def get_monthly_stock_data(
         response = httpx.get(
             "https://www.alphavantage.co/query",
             params={
-                "function": "TIME_SERIES_MONTHLY_ADJUSTED",
+                "function": (
+                    "TIME_SERIES_MONTHLY_ADJUSTED"
+                ),
                 "symbol": stock.stock_symbol,
                 "apikey": user.alpha_vantage_api_key,
             },
@@ -264,10 +342,17 @@ def get_monthly_stock_data(
                 detail="Invalid stock symbol",
             )
 
-        if "Note" in data or "Information" in data:
+        if (
+            "Note" in data
+            or "Information" in data
+        ):
             raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="API call frequency limit reached",
+                status_code=(
+                    status.HTTP_429_TOO_MANY_REQUESTS
+                ),
+                detail=(
+                    "API call frequency limit reached"
+                ),
             )
 
         monthly_data = data.get(
@@ -278,7 +363,10 @@ def get_monthly_stock_data(
         if not monthly_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No monthly data available for this stock",
+                detail=(
+                    "No monthly data available "
+                    "for this stock"
+                ),
             )
 
         formatted_data = []
@@ -287,16 +375,30 @@ def get_monthly_stock_data(
             formatted_data.append(
                 {
                     "date": date,
-                    "open": float(values["1. open"]),
-                    "high": float(values["2. high"]),
-                    "low": float(values["3. low"]),
-                    "close": float(values["4. close"]),
-                    "adjusted_close": float(
-                        values["5. adjusted close"]
+                    "open": float(
+                        values["1. open"]
                     ),
-                    "volume": int(values["6. volume"]),
+                    "high": float(
+                        values["2. high"]
+                    ),
+                    "low": float(
+                        values["3. low"]
+                    ),
+                    "close": float(
+                        values["4. close"]
+                    ),
+                    "adjusted_close": float(
+                        values[
+                            "5. adjusted close"
+                        ]
+                    ),
+                    "volume": int(
+                        values["6. volume"]
+                    ),
                     "dividend_amount": float(
-                        values["7. dividend amount"]
+                        values[
+                            "7. dividend amount"
+                        ]
                     ),
                 }
             )
@@ -309,7 +411,10 @@ def get_monthly_stock_data(
         return {
             "symbol": stock.stock_symbol,
             "name": stock.stock_company_name,
-            "metadata": data.get("Meta Data", {}),
+            "metadata": data.get(
+                "Meta Data",
+                {},
+            ),
             "weekly_data": formatted_data,
         }
 
@@ -318,20 +423,31 @@ def get_monthly_stock_data(
 
     except httpx.TimeoutException:
         raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Request timeout - API service unavailable",
+            status_code=(
+                status.HTTP_504_GATEWAY_TIMEOUT
+            ),
+            detail=(
+                "Request timeout - "
+                "API service unavailable"
+            ),
         )
 
     except httpx.HTTPError:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to communicate with stock data provider",
+            detail=(
+                "Failed to communicate with "
+                "stock data provider"
+            ),
         )
 
     except (KeyError, TypeError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Invalid response received from stock data provider",
+            detail=(
+                "Invalid response received from "
+                "stock data provider"
+            ),
         )
 
     except Exception as exc:
@@ -341,7 +457,9 @@ def get_monthly_stock_data(
         )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=(
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
             detail="Internal server error",
         )
 
@@ -353,7 +471,9 @@ def get_monthly_stock_data(
 def get_stock_summary(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = user_crud.get_user_by_email(
         db,
@@ -372,10 +492,13 @@ def get_stock_summary(
             detail="Alpha Vantage API key not set",
         )
 
+    normalized_symbol = symbol.upper()
+
     stock = (
         db.query(StocksTable)
         .filter(
-            StocksTable.stock_symbol == symbol.upper()
+            StocksTable.stock_symbol
+            == normalized_symbol
         )
         .first()
     )
@@ -386,12 +509,15 @@ def get_stock_summary(
             detail="Stock not found",
         )
 
+    user_id = user.id
+    stock_symbol = stock.stock_symbol
+
     try:
         response = httpx.get(
             "https://www.alphavantage.co/query",
             params={
                 "function": "GLOBAL_QUOTE",
-                "symbol": stock.stock_symbol,
+                "symbol": stock_symbol,
                 "apikey": user.alpha_vantage_api_key,
             },
             timeout=10,
@@ -416,8 +542,12 @@ def get_stock_summary(
             or "Information" in response_json
         ):
             raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="API call frequency limit reached",
+                status_code=(
+                    status.HTTP_429_TOO_MANY_REQUESTS
+                ),
+                detail=(
+                    "API call frequency limit reached"
+                ),
             )
 
         data = response_json.get(
@@ -432,7 +562,7 @@ def get_stock_summary(
             )
 
         response_data = {
-            "symbol": stock.stock_symbol,
+            "symbol": stock_symbol,
             "name": stock.stock_company_name,
             "open": float(data["02. open"]),
             "high": float(data["03. high"]),
@@ -445,7 +575,9 @@ def get_stock_summary(
             "previous_close": float(
                 data["08. previous close"]
             ),
-            "change": float(data["09. change"]),
+            "change": float(
+                data["09. change"]
+            ),
             "change_percent": data[
                 "10. change percent"
             ],
@@ -454,89 +586,124 @@ def get_stock_summary(
         existing_cache = (
             db.query(StockDataCache)
             .filter(
-                StockDataCache.user_id == user.id,
+                StockDataCache.user_id
+                == user_id,
                 StockDataCache.stock_symbol
-                == stock.stock_symbol,
+                == stock_symbol,
             )
             .first()
         )
 
         if existing_cache:
-            existing_cache.open_price = response_data[
-                "open"
-            ]
-            existing_cache.high_price = response_data[
-                "high"
-            ]
-            existing_cache.low_price = response_data[
-                "low"
-            ]
-            existing_cache.current_price = response_data[
-                "price"
-            ]
-            existing_cache.volume = response_data[
-                "volume"
-            ]
-            existing_cache.latest_trading_day = (
-                response_data["latest_trading_day"]
+            update_cache_from_summary(
+                existing_cache,
+                response_data,
             )
-            existing_cache.previous_close = (
-                response_data["previous_close"]
-            )
-            existing_cache.change = response_data[
-                "change"
-            ]
-            existing_cache.change_percent = (
-                response_data["change_percent"]
-            )
-            existing_cache.last_updated = func.now()
 
         else:
             new_cache = StockDataCache(
-                user_id=user.id,
-                stock_symbol=stock.stock_symbol,
+                user_id=user_id,
+                stock_symbol=stock_symbol,
                 open_price=response_data["open"],
                 high_price=response_data["high"],
                 low_price=response_data["low"],
                 current_price=response_data["price"],
                 volume=response_data["volume"],
-                latest_trading_day=response_data[
-                    "latest_trading_day"
-                ],
-                previous_close=response_data[
-                    "previous_close"
-                ],
+                latest_trading_day=(
+                    response_data[
+                        "latest_trading_day"
+                    ]
+                ),
+                previous_close=(
+                    response_data[
+                        "previous_close"
+                    ]
+                ),
                 change=response_data["change"],
-                change_percent=response_data[
-                    "change_percent"
-                ],
+                change_percent=(
+                    response_data[
+                        "change_percent"
+                    ]
+                ),
             )
 
             db.add(new_cache)
 
-        db.commit()
+        try:
+            db.commit()
+
+        except IntegrityError:
+            db.rollback()
+
+            winning_cache = (
+                db.query(StockDataCache)
+                .filter(
+                    StockDataCache.user_id
+                    == user_id,
+                    StockDataCache.stock_symbol
+                    == stock_symbol,
+                )
+                .first()
+            )
+
+            if not winning_cache:
+                raise HTTPException(
+                    status_code=(
+                        status
+                        .HTTP_500_INTERNAL_SERVER_ERROR
+                    ),
+                    detail=(
+                        "Failed to update "
+                        "stock data cache"
+                    ),
+                )
+
+            update_cache_from_summary(
+                winning_cache,
+                response_data,
+            )
+
+            db.commit()
 
         return response_data
 
     except HTTPException:
+        db.rollback()
         raise
 
     except httpx.TimeoutException:
+        db.rollback()
+
         raise HTTPException(
-            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-            detail="Request timeout - API service unavailable",
+            status_code=(
+                status.HTTP_504_GATEWAY_TIMEOUT
+            ),
+            detail=(
+                "Request timeout - "
+                "API service unavailable"
+            ),
         )
 
     except httpx.HTTPError:
+        db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to communicate with stock data provider",
+            detail=(
+                "Failed to communicate with "
+                "stock data provider"
+            ),
         )
 
     except (KeyError, TypeError, ValueError):
+        db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Invalid response received from stock data provider",
+            detail=(
+                "Invalid response received from "
+                "stock data provider"
+            ),
         )
 
     except Exception as exc:
@@ -544,11 +711,13 @@ def get_stock_summary(
 
         print(
             "Failed to fetch stock data "
-            f"for {stock.stock_symbol}: {exc}"
+            f"for {stock_symbol}: {exc}"
         )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=(
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
             detail="Internal server error",
         )
 
@@ -556,7 +725,9 @@ def get_stock_summary(
 @router.get("/summary")
 def get_portfolio_summary(
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = user_crud.get_user_by_email(
         db,
@@ -609,21 +780,34 @@ def get_portfolio_summary(
             summaries.append(
                 {
                     "symbol": stock.stock_symbol,
-                    "name": stock.stock_company_name,
-                    "open": cached_data.open_price,
-                    "high": cached_data.high_price,
-                    "low": cached_data.low_price,
-                    "price": cached_data.current_price,
+                    "name": (
+                        stock.stock_company_name
+                    ),
+                    "open": (
+                        cached_data.open_price
+                    ),
+                    "high": (
+                        cached_data.high_price
+                    ),
+                    "low": (
+                        cached_data.low_price
+                    ),
+                    "price": (
+                        cached_data.current_price
+                    ),
                     "volume": cached_data.volume,
                     "latest_trading_day": (
-                        cached_data.latest_trading_day
+                        cached_data
+                        .latest_trading_day
                     ),
                     "previous_close": (
-                        cached_data.previous_close
+                        cached_data
+                        .previous_close
                     ),
                     "change": cached_data.change,
                     "change_percent": (
-                        cached_data.change_percent
+                        cached_data
+                        .change_percent
                     ),
                 }
             )
@@ -632,7 +816,9 @@ def get_portfolio_summary(
             summaries.append(
                 {
                     "symbol": stock.stock_symbol,
-                    "name": stock.stock_company_name,
+                    "name": (
+                        stock.stock_company_name
+                    ),
                 }
             )
 
@@ -646,12 +832,15 @@ def get_portfolio_summary(
 def add_stock_to_portfolio(
     ticker: StockSymbol,
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = (
         db.query(UsersTable)
         .filter(
-            UsersTable.email == current_user_email
+            UsersTable.email
+            == current_user_email
         )
         .first()
     )
@@ -677,12 +866,15 @@ def add_stock_to_portfolio(
             detail="Stock not found",
         )
 
+    user_id = user.id
+    stock_symbol = stock.stock_symbol
+
     existing = (
         db.query(PortfoliosTable)
         .filter(
-            PortfoliosTable.user_id == user.id,
+            PortfoliosTable.user_id == user_id,
             PortfoliosTable.stock_symbol
-            == stock.stock_symbol,
+            == stock_symbol,
         )
         .first()
     )
@@ -694,8 +886,8 @@ def add_stock_to_portfolio(
         )
 
     new_entry = PortfoliosTable(
-        user_id=user.id,
-        stock_symbol=stock.stock_symbol,
+        user_id=user_id,
+        stock_symbol=stock_symbol,
     )
 
     try:
@@ -709,27 +901,37 @@ def add_stock_to_portfolio(
         existing_after_rollback = (
             db.query(PortfoliosTable)
             .filter(
-                PortfoliosTable.user_id == user.id,
+                PortfoliosTable.user_id
+                == user_id,
                 PortfoliosTable.stock_symbol
-                == stock.stock_symbol,
+                == stock_symbol,
             )
             .first()
         )
 
         if existing_after_rollback:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Stock already in portfolio",
+                status_code=(
+                    status.HTTP_400_BAD_REQUEST
+                ),
+                detail=(
+                    "Stock already in portfolio"
+                ),
             )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to add stock to portfolio",
+            status_code=(
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
+            detail=(
+                "Failed to add stock "
+                "to portfolio"
+            ),
         )
 
     return {
         "message": (
-            f"Stock {stock.stock_symbol} "
+            f"Stock {stock_symbol} "
             "added to portfolio"
         )
     }
@@ -742,12 +944,15 @@ def add_stock_to_portfolio(
 def remove_stock_from_portfolio(
     symbol: str,
     db: Session = Depends(get_db),
-    current_user_email: str = Depends(get_current_user_email),
+    current_user_email: str = Depends(
+        get_current_user_email
+    ),
 ):
     user = (
         db.query(UsersTable)
         .filter(
-            UsersTable.email == current_user_email
+            UsersTable.email
+            == current_user_email
         )
         .first()
     )
@@ -802,8 +1007,13 @@ def remove_stock_from_portfolio(
         )
 
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to remove stock from portfolio",
+            status_code=(
+                status.HTTP_500_INTERNAL_SERVER_ERROR
+            ),
+            detail=(
+                "Failed to remove stock "
+                "from portfolio"
+            ),
         )
 
     return {
