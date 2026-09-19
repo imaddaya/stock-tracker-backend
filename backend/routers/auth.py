@@ -162,12 +162,22 @@ def forgot_password(
     email_data: EmailSchema,
     db: Session = Depends(get_db),
 ):
+    generic_response = {
+        "message": (
+            "If your email is registered and verified, "
+            "you'll receive password reset instructions."
+        )
+    }
+
     user = user_crud.get_user_by_email(
         db,
         email_data.email,
     )
 
-    if user and user.is_verified:
+    if not user or not user.is_verified:
+        return generic_response
+
+    try:
         token = create_password_reset_token(
             user.email,
             user.hashed_password,
@@ -178,12 +188,15 @@ def forgot_password(
             token,
         )
 
-    return {
-        "message": (
-            "If your email is registered and verified, "
-            "you'll receive password reset instructions."
+    except Exception as exc:
+        # Do not reveal email-delivery failures to the caller,
+        # because doing so could reveal whether an account exists.
+        print(
+            "Password reset email could not be sent "
+            f"for {user.email}: {exc}"
         )
-    }
+
+    return generic_response
 
 
 @router.post("/reset-password")
