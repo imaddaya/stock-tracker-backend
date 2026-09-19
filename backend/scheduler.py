@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from database import SessionLocal
 from models import (
+    EmailReminderDelivery,
     PortfoliosTable,
     StockDataCache,
     StocksTable,
@@ -28,16 +29,197 @@ def format_volume(value: int | None) -> str:
     return f"{value:,}"
 
 
+def build_portfolio_summary(
+    db: Session,
+    user: UsersTable,
+) -> list[dict]:
+    portfolio = (
+        db.query(PortfoliosTable)
+        .filter(
+            PortfoliosTable.user_id == user.id
+        )
+        .all()
+    )
+
+    if not portfolio:
+        print(
+            f"Skipping {user.email}: "
+            "portfolio is empty"
+        )
+        return []
+
+    portfolio_summary = []
+
+    for entry in portfolio:
+        stock = (
+            db.query(StocksTable)
+            .filter(
+                StocksTable.stock_symbol
+                == entry.stock_symbol
+            )
+            .first()
+        )
+
+        if not stock:
+            continue
+
+        cached_data = (
+            db.query(StockDataCache)
+            .filter(
+                StockDataCache.user_id == user.id,
+                StockDataCache.stock_symbol
+                == stock.stock_symbol,
+            )
+            .first()
+        )
+
+        if cached_data:
+            portfolio_summary.append(
+                {
+                    "ticker": stock.stock_symbol,
+                    "name": stock.stock_company_name,
+                    "price": format_currency(
+                        cached_data.current_price
+                    ),
+                    "change_percent": (
+                        cached_data.change_percent
+                        or "N/A"
+                    ),
+                    "change": format_currency(
+                        cached_data.change
+                    ),
+                    "open": format_currency(
+                        cached_data.open_price
+                    ),
+                    "high": format_currency(
+                        cached_data.high_price
+                    ),
+                    "low": format_currency(
+                        cached_data.low_price
+                    ),
+                    "volume": format_volume(
+                        cached_data.volume
+                    ),
+                    "latest_trading_day": (
+                        cached_data.latest_trading_day
+                        or "N/A"
+                    ),
+                    "previous_close": format_currency(
+                        cached_data.previous_close
+                    ),
+                }
+            )
+
+        else:
+            portfolio_summary.append(
+                {
+                    "ticker": stock.stock_symbol,
+                    "name": stock.stock_company_name,
+                    "price": "N/A",
+                    "change_percent": "N/A",
+                    "change": "N/A",
+                    "open": "N/A",
+                    "high": "N/A",
+                    "low": "N/A",
+                    "volume": "N/A",
+                    "latest_trading_day": "N/A",
+                    "previous_close": "N/A",
+                }
+            )
+
+    if not portfolio_summary:
+        print(
+            f"Skipping {user.email}: "
+            "no portfolio data available"
+        )
+
+    return portfolio_summary
+
+
+def send_scheduled_email_for_user(
+    db: Session,
+    user: UsersTable,
+) -> bool:
+    user_timezone = ZoneInfo(
+        user.timezone or "UTC"
+    )
+
+    local_now = datetime.now(
+        user_timezone
+    )
+
+    current_time = local_now.strftime(
+        "%H:%M"
+    )
+
+    if current_time != user.email_reminder_time:
+        return False
+
+    local_date = local_now.date()
+
+    existing_delivery = (
+        db.query(EmailReminderDelivery)
+        .filter(
+            EmailReminderDelivery.user_id == user.id,
+            EmailReminderDelivery.local_date
+            == local_date,
+        )
+        .first()
+    )
+
+    if existing_delivery:
+        print(
+            f"Skipping {user.email}: "
+            f"daily reminder already sent "
+            f"for {local_date}"
+        )
+        return False
+
+    portfolio_summary = build_portfolio_summary(
+        db,
+        user,
+    )
+
+    if not portfolio_summary:
+        return False
+
+    send_daily_summary_email(
+        user.email,
+        portfolio_summary,
+    )
+
+    delivery = EmailReminderDelivery(
+        user_id=user.id,
+        local_date=local_date,
+    )
+
+    db.add(delivery)
+    db.commit()
+
+    print(
+        f"Sent scheduled email to {user.email} "
+        f"at {current_time} "
+        f"({user.timezone or 'UTC'})"
+    )
+
+    return True
+
+
 def send_scheduled_emails() -> None:
     """Send portfolio summary emails at each user's configured local time."""
+
     db: Session = SessionLocal()
 
     try:
         users = (
             db.query(UsersTable)
             .filter(
-                UsersTable.email_reminder_enabled.is_(True),
-                UsersTable.email_reminder_time.isnot(None),
+                UsersTable.email_reminder_enabled.is_(
+                    True
+                ),
+                UsersTable.email_reminder_time.isnot(
+                    None
+                ),
             )
             .all()
         )
@@ -49,127 +231,9 @@ def send_scheduled_emails() -> None:
 
         for user in users:
             try:
-                user_timezone = ZoneInfo(
-                    user.timezone or "UTC"
-                )
-
-                current_time = datetime.now(
-                    user_timezone
-                ).strftime("%H:%M")
-
-                if current_time != user.email_reminder_time:
-                    continue
-
-                portfolio = (
-                    db.query(PortfoliosTable)
-                    .filter(
-                        PortfoliosTable.user_id == user.id
-                    )
-                    .all()
-                )
-
-                if not portfolio:
-                    print(
-                        f"Skipping {user.email}: "
-                        "portfolio is empty"
-                    )
-                    continue
-
-                portfolio_summary = []
-
-                for entry in portfolio:
-                    stock = (
-                        db.query(StocksTable)
-                        .filter(
-                            StocksTable.stock_symbol
-                            == entry.stock_symbol
-                        )
-                        .first()
-                    )
-
-                    if not stock:
-                        continue
-
-                    cached_data = (
-                        db.query(StockDataCache)
-                        .filter(
-                            StockDataCache.user_id == user.id,
-                            StockDataCache.stock_symbol
-                            == stock.stock_symbol,
-                        )
-                        .first()
-                    )
-
-                    if cached_data:
-                        portfolio_summary.append(
-                            {
-                                "ticker": stock.stock_symbol,
-                                "name": stock.stock_company_name,
-                                "price": format_currency(
-                                    cached_data.current_price
-                                ),
-                                "change_percent": (
-                                    cached_data.change_percent
-                                    or "N/A"
-                                ),
-                                "change": format_currency(
-                                    cached_data.change
-                                ),
-                                "open": format_currency(
-                                    cached_data.open_price
-                                ),
-                                "high": format_currency(
-                                    cached_data.high_price
-                                ),
-                                "low": format_currency(
-                                    cached_data.low_price
-                                ),
-                                "volume": format_volume(
-                                    cached_data.volume
-                                ),
-                                "latest_trading_day": (
-                                    cached_data.latest_trading_day
-                                    or "N/A"
-                                ),
-                                "previous_close": format_currency(
-                                    cached_data.previous_close
-                                ),
-                            }
-                        )
-
-                    else:
-                        portfolio_summary.append(
-                            {
-                                "ticker": stock.stock_symbol,
-                                "name": stock.stock_company_name,
-                                "price": "N/A",
-                                "change_percent": "N/A",
-                                "change": "N/A",
-                                "open": "N/A",
-                                "high": "N/A",
-                                "low": "N/A",
-                                "volume": "N/A",
-                                "latest_trading_day": "N/A",
-                                "previous_close": "N/A",
-                            }
-                        )
-
-                if not portfolio_summary:
-                    print(
-                        f"Skipping {user.email}: "
-                        "no portfolio data available"
-                    )
-                    continue
-
-                send_daily_summary_email(
-                    user.email,
-                    portfolio_summary,
-                )
-
-                print(
-                    f"Sent scheduled email to {user.email} "
-                    f"at {current_time} "
-                    f"({user.timezone or 'UTC'})"
+                send_scheduled_email_for_user(
+                    db,
+                    user,
                 )
 
             except ZoneInfoNotFoundError:
@@ -179,13 +243,19 @@ def send_scheduled_emails() -> None:
                 )
 
             except Exception as exc:
+                db.rollback()
+
                 print(
-                    f"Failed to send scheduled email "
+                    "Failed to send scheduled email "
                     f"to {user.email}: {exc}"
                 )
 
     except Exception as exc:
-        print(f"Scheduler database error: {exc}")
+        db.rollback()
+
+        print(
+            f"Scheduler database error: {exc}"
+        )
 
     finally:
         db.close()
@@ -193,6 +263,7 @@ def send_scheduled_emails() -> None:
 
 def run_scheduler() -> None:
     """Run the email scheduler as a standalone process."""
+
     print(
         "Email scheduler started - "
         "checking reminders every minute"
@@ -201,8 +272,11 @@ def run_scheduler() -> None:
     while True:
         try:
             send_scheduled_emails()
+
         except Exception as exc:
-            print(f"Scheduler error: {exc}")
+            print(
+                f"Scheduler error: {exc}"
+            )
 
         time.sleep(60)
 
