@@ -121,6 +121,14 @@ class StocksTable(Base):
 class PortfoliosTable(Base):
     __tablename__ = "portfolios_table"
 
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "stock_symbol",
+            name="uq_portfolios_user_stock",
+        ),
+    )
+
     id: Mapped[int] = mapped_column(
         primary_key=True,
         index=True,
@@ -161,6 +169,14 @@ class PortfoliosTable(Base):
 
 class StockDataCache(Base):
     __tablename__ = "stock_data_cache"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "stock_symbol",
+            name="uq_stock_data_cache_user_stock",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(
         primary_key=True,
