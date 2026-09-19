@@ -137,6 +137,27 @@ class EmailReminderRequest(BaseModel):
     enabled: bool
     timezone: str = "UTC"
 
+    @field_validator("reminder_time")
+    @classmethod
+    def validate_reminder_time(
+        cls,
+        reminder_time: Optional[str],
+    ) -> Optional[str]:
+        if reminder_time is None:
+            return None
+
+        reminder_time = reminder_time.strip()
+
+        if not re.fullmatch(
+            r"(?:[01]\d|2[0-3]):[0-5]\d",
+            reminder_time,
+        ):
+            raise ValueError(
+                "Invalid reminder time. Use HH:MM format"
+            )
+
+        return reminder_time
+
     @field_validator("timezone")
     @classmethod
     def validate_timezone(
@@ -158,3 +179,12 @@ class EmailReminderRequest(BaseModel):
             )
 
         return timezone_name
+
+    @model_validator(mode="after")
+    def validate_enabled_reminder(self):
+        if self.enabled and self.reminder_time is None:
+            raise ValueError(
+                "Reminder time is required when reminders are enabled"
+            )
+
+        return self
