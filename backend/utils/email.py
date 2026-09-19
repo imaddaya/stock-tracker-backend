@@ -1,60 +1,175 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
 from config import get_settings
+
 
 settings = get_settings()
 
-def send_email(subject: str, recipient: str, html_content: str):
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 465
+SMTP_TIMEOUT_SECONDS = 15
+
+
+def send_email(
+    subject: str,
+    recipient: str,
+    html_content: str,
+) -> None:
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
     message["From"] = settings.EMAIL_ADDRESS
     message["To"] = recipient
-    message.attach(MIMEText(html_content, "html"))
+
+    message.attach(
+        MIMEText(
+            html_content,
+            "html",
+        )
+    )
 
     try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(settings.EMAIL_ADDRESS,settings.EMAIL_PASSWORD)  # ✅ Now both are safe strings
-            server.sendmail(settings.EMAIL_ADDRESS, recipient, message.as_string())
-    except Exception as e:
-        print(f"Failed to send email to {recipient}: {e}")
+        with smtplib.SMTP_SSL(
+            SMTP_HOST,
+            SMTP_PORT,
+            timeout=SMTP_TIMEOUT_SECONDS,
+        ) as server:
+            server.login(
+                settings.EMAIL_ADDRESS,
+                settings.EMAIL_PASSWORD,
+            )
+
+            server.sendmail(
+                settings.EMAIL_ADDRESS,
+                recipient,
+                message.as_string(),
+            )
+
+    except Exception as exc:
+        print(
+            f"Failed to send email to {recipient}: "
+            f"{exc}"
+        )
         raise
 
-def send_verification_email(email: str, token: str):
-    verification_link = f"{settings.FRONTEND_URL}/email-verified?token={token}"
+
+def send_verification_email(
+    email: str,
+    token: str,
+) -> None:
+    verification_link = (
+        f"{settings.FRONTEND_URL}"
+        f"/email-verified?token={token}"
+    )
+
     html = f"""
     <h3>Verify your email</h3>
     <p>Click the link below to verify your email address:</p>
-    <a href="{verification_link}" style="color:#0070f3;">Verify Email</a>
+    <a href="{verification_link}" style="color:#0070f3;">
+        Verify Email
+    </a>
     """
-    send_email("Please verify your email", email, html)
 
-def send_password_reset_email(email: str, token: str):
-    reset_link = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+    send_email(
+        "Please verify your email",
+        email,
+        html,
+    )
+
+
+def send_password_reset_email(
+    email: str,
+    token: str,
+) -> None:
+    reset_link = (
+        f"{settings.FRONTEND_URL}"
+        f"/reset-password?token={token}"
+    )
+
     html = f"""
     <h3>Reset your password</h3>
     <p>Click the link below to reset your password:</p>
-    <a href="{reset_link}" style="color:#0070f3;">Reset Password</a>
+    <a href="{reset_link}" style="color:#0070f3;">
+        Reset Password
+    </a>
     <p>This link will expire in 1 hour.</p>
     """
-    send_email("Reset your password", email, html)
 
-def send_account_deletion_email(email: str, token: str):
-    deletion_link = f"{settings.FRONTEND_URL}/confirm-account-deletion?token={token}"
+    send_email(
+        "Reset your password",
+        email,
+        html,
+    )
+
+
+def send_account_deletion_email(
+    email: str,
+    token: str,
+) -> None:
+    deletion_link = (
+        f"{settings.FRONTEND_URL}"
+        f"/confirm-account-deletion?token={token}"
+    )
+
     html = f"""
     <h3>⚠️ Account Deletion Confirmation</h3>
-    <p>You have requested to delete your account. This action is <strong>PERMANENT</strong> and cannot be undone.</p>
-    <p>Click the link below to permanently delete your account:</p>
-    <a href="{deletion_link}" style="color:#dc3545; font-weight: bold;">DELETE MY ACCOUNT PERMANENTLY</a>
-    <p><strong>This link will expire in 30 minutes.</strong></p>
-    <p>If you did not request this deletion, please ignore this email.</p>
+    <p>
+        You have requested to delete your account.
+        This action is <strong>PERMANENT</strong>
+        and cannot be undone.
+    </p>
+    <p>
+        Click the link below to permanently delete
+        your account:
+    </p>
+    <a
+        href="{deletion_link}"
+        style="color:#dc3545; font-weight:bold;"
+    >
+        DELETE MY ACCOUNT PERMANENTLY
+    </a>
+    <p>
+        <strong>
+            This link will expire in 30 minutes.
+        </strong>
+    </p>
+    <p>
+        If you did not request this deletion,
+        please ignore this email.
+    </p>
     """
-    send_email("🚨 Confirm Account Deletion", email, html)
 
-def send_daily_summary_email(email: str, portfolio_summary: list):
-    html = "<h3>📈 Daily Stock Portfolio Summary</h3>"
-    html += "<p>Here's your comprehensive daily portfolio update:</p>"
-    html += "<table border='1' cellpadding='8' cellspacing='0' style='border-collapse: collapse; width: 100%; font-size: 14px;'>"
+    send_email(
+        "🚨 Confirm Account Deletion",
+        email,
+        html,
+    )
+
+
+def send_daily_summary_email(
+    email: str,
+    portfolio_summary: list,
+) -> None:
+    html = (
+        "<h3>📈 Daily Stock Portfolio Summary</h3>"
+    )
+
+    html += (
+        "<p>"
+        "Here's your comprehensive daily portfolio update:"
+        "</p>"
+    )
+
+    html += (
+        "<table "
+        "border='1' "
+        "cellpadding='8' "
+        "cellspacing='0' "
+        "style='border-collapse: collapse; "
+        "width: 100%; font-size: 14px;'>"
+    )
+
     html += """
     <tr style='background-color: #f2f2f2;'>
         <th>Ticker</th>
@@ -72,31 +187,90 @@ def send_daily_summary_email(email: str, portfolio_summary: list):
     """
 
     for stock in portfolio_summary:
-        # Color coding for positive/negative changes
+        change_percent = stock.get(
+            "change_percent",
+            "N/A",
+        )
+
         change_color = "green"
-        if stock.get('change_percent', 'N/A') != 'N/A' and stock.get('change_percent').startswith('-'):
+
+        if (
+            change_percent != "N/A"
+            and change_percent.startswith("-")
+        ):
             change_color = "red"
-        elif stock.get('change_percent') == 'N/A':
+
+        elif change_percent == "N/A":
             change_color = "gray"
-            
+
         html += f"""
         <tr>
-            <td><strong>{stock.get('ticker', 'N/A')}</strong></td>
-            <td>{stock.get('name', 'N/A')}</td>
-            <td><strong>{stock.get('price', 'N/A')}</strong></td>
-            <td style='color: {change_color}; font-weight: bold;'>{stock.get('change', 'N/A')}</td>
-            <td style='color: {change_color}; font-weight: bold;'>{stock.get('change_percent', 'N/A')}</td>
-            <td>{stock.get('open', 'N/A')}</td>
-            <td>{stock.get('high', 'N/A')}</td>
-            <td>{stock.get('low', 'N/A')}</td>
-            <td>{stock.get('volume', 'N/A')}</td>
-            <td>{stock.get('previous_close', 'N/A')}</td>
-            <td>{stock.get('latest_trading_day', 'N/A')}</td>
+            <td>
+                <strong>
+                    {stock.get("ticker", "N/A")}
+                </strong>
+            </td>
+            <td>{stock.get("name", "N/A")}</td>
+            <td>
+                <strong>
+                    {stock.get("price", "N/A")}
+                </strong>
+            </td>
+            <td
+                style="
+                    color: {change_color};
+                    font-weight: bold;
+                "
+            >
+                {stock.get("change", "N/A")}
+            </td>
+            <td
+                style="
+                    color: {change_color};
+                    font-weight: bold;
+                "
+            >
+                {change_percent}
+            </td>
+            <td>{stock.get("open", "N/A")}</td>
+            <td>{stock.get("high", "N/A")}</td>
+            <td>{stock.get("low", "N/A")}</td>
+            <td>{stock.get("volume", "N/A")}</td>
+            <td>
+                {stock.get("previous_close", "N/A")}
+            </td>
+            <td>
+                {stock.get("latest_trading_day", "N/A")}
+            </td>
         </tr>
         """
 
     html += "</table>"
-    html += "<br><p><small>📅 Data may be delayed. For real-time quotes, please visit your portfolio dashboard.</small></p>"
-    html += "<br><p style='color: #666;'><small>This is an automated daily summary email. You can modify your email preferences in your account settings.</small></p>"
 
-    send_email("📊 Daily Stock Portfolio Summary", email, html)
+    html += (
+        "<br>"
+        "<p>"
+        "<small>"
+        "📅 Data may be delayed. "
+        "For real-time quotes, please visit your "
+        "portfolio dashboard."
+        "</small>"
+        "</p>"
+    )
+
+    html += (
+        "<br>"
+        "<p style='color: #666;'>"
+        "<small>"
+        "This is an automated daily summary email. "
+        "You can modify your email preferences "
+        "in your account settings."
+        "</small>"
+        "</p>"
+    )
+
+    send_email(
+        "📊 Daily Stock Portfolio Summary",
+        email,
+        html,
+    )
