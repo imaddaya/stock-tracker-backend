@@ -101,11 +101,17 @@ def create_password_reset_token(
 
 def create_access_token(
     email: str,
+    hashed_password: str,
 ) -> str:
     return create_token(
         data={
             "sub": email,
             "type": "access",
+            "password_fingerprint": (
+                password_fingerprint(
+                    hashed_password
+                )
+            ),
         },
         expires_delta=timedelta(minutes=60),
     )

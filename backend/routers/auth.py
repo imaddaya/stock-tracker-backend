@@ -32,7 +32,9 @@ def signup(
     try:
         db_user = user_crud.create_user(db, user)
 
-        token = create_verification_token(db_user.email)
+        token = create_verification_token(
+            db_user.email
+        )
 
         send_verification_email(
             db_user.email,
@@ -103,7 +105,8 @@ def login(
         )
 
     access_token = create_access_token(
-        db_user.email
+        db_user.email,
+        db_user.hashed_password,
     )
 
     return {
@@ -221,7 +224,10 @@ def reset_password(
     )
 
     if (
-        not isinstance(token_password_fingerprint, str)
+        not isinstance(
+            token_password_fingerprint,
+            str,
+        )
         or token_password_fingerprint
         != current_password_fingerprint
     ):
