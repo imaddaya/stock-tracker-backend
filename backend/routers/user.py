@@ -168,7 +168,7 @@ def initiate_account_deletion(
     }
 
 
-@router.delete("/confirm-delete-account")
+@router.post("/confirm-delete-account")
 def confirm_account_deletion(
     token: str,
     db: Session = Depends(get_db),
