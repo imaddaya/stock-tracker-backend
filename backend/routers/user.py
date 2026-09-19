@@ -11,6 +11,7 @@ from utils.email import send_account_deletion_email
 from utils.jwt import (
     create_account_deletion_token,
     decode_token,
+    password_fingerprint,
 )
 
 
@@ -152,7 +153,8 @@ def initiate_account_deletion(
         )
 
     token = create_account_deletion_token(
-        user.email
+        user.email,
+        user.hashed_password,
     )
 
     send_account_deletion_email(
@@ -180,7 +182,7 @@ def confirm_account_deletion(
 
     email = payload.get("email")
 
-    if not email:
+    if not isinstance(email, str) or not email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid token",
@@ -196,6 +198,29 @@ def confirm_account_deletion(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
+        )
+
+    token_password_fingerprint = payload.get(
+        "password_fingerprint"
+    )
+
+    current_password_fingerprint = password_fingerprint(
+        user.hashed_password
+    )
+
+    if (
+        not isinstance(
+            token_password_fingerprint,
+            str,
+        )
+        or token_password_fingerprint
+        != current_password_fingerprint
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=(
+                "Account deletion token is no longer valid"
+            ),
         )
 
     db.delete(user)

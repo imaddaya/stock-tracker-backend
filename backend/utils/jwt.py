@@ -119,11 +119,17 @@ def create_access_token(
 
 def create_account_deletion_token(
     email: str,
+    hashed_password: str,
 ) -> str:
     return create_token(
         data={
             "email": email,
             "type": "account_deletion",
+            "password_fingerprint": (
+                password_fingerprint(
+                    hashed_password
+                )
+            ),
         },
         expires_delta=timedelta(minutes=30),
     )
