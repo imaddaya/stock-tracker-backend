@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -22,6 +22,13 @@ class UpdateApiKeyRequest(BaseModel):
         min_length=1,
         max_length=128,
     )
+
+
+def ensure_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+
+    return value.astimezone(timezone.utc)
 
 
 @router.get("/profile")
@@ -84,23 +91,41 @@ def update_api_key(
             detail="API key cannot be empty",
         )
 
+    now = datetime.now(timezone.utc)
+
     if user.last_api_key_update:
-        elapsed = (
-            datetime.utcnow()
-            - user.last_api_key_update
+        last_update = ensure_utc(
+            user.last_api_key_update
         )
 
+        elapsed = now - last_update
+
         if elapsed < timedelta(days=7):
+            retry_after = (
+                timedelta(days=7)
+                - elapsed
+            )
+
+            retry_after_seconds = max(
+                1,
+                int(retry_after.total_seconds()),
+            )
+
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail=(
                     "API key can only be updated "
                     "once per week"
                 ),
+                headers={
+                    "Retry-After": str(
+                        retry_after_seconds
+                    ),
+                },
             )
 
     user.alpha_vantage_api_key = new_api_key
-    user.last_api_key_update = datetime.utcnow()
+    user.last_api_key_update = now
 
     db.commit()
 
