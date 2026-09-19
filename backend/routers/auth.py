@@ -28,14 +28,37 @@ def signup(
             detail="User already exists",
         )
 
-    db_user = user_crud.create_user(db, user)
+    try:
+        db_user = user_crud.create_user(db, user)
 
-    token = create_verification_token(db_user.email)
+        token = create_verification_token(db_user.email)
 
-    send_verification_email(
-        db_user.email,
-        token,
-    )
+        send_verification_email(
+            db_user.email,
+            token,
+        )
+
+        db.commit()
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as exc:
+        db.rollback()
+
+        print(
+            "Failed to create user because the verification "
+            f"email could not be sent: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "Unable to send verification email. "
+                "Please try again later."
+            ),
+        )
 
     return {
         "message": (
