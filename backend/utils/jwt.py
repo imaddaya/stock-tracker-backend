@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -9,10 +10,22 @@ from config import get_settings
 settings = get_settings()
 
 
-def create_token(data: dict, expires_delta: timedelta) -> str:
+def password_fingerprint(hashed_password: str) -> str:
+    return hashlib.sha256(
+        hashed_password.encode("utf-8")
+    ).hexdigest()
+
+
+def create_token(
+    data: dict,
+    expires_delta: timedelta,
+) -> str:
     payload = data.copy()
 
-    payload["exp"] = datetime.now(timezone.utc) + expires_delta
+    payload["exp"] = (
+        datetime.now(timezone.utc)
+        + expires_delta
+    )
 
     return jwt.encode(
         payload,
@@ -56,7 +69,9 @@ def decode_token(
     return payload
 
 
-def create_verification_token(email: str) -> str:
+def create_verification_token(
+    email: str,
+) -> str:
     return create_token(
         data={
             "email": email,
@@ -66,17 +81,27 @@ def create_verification_token(email: str) -> str:
     )
 
 
-def create_password_reset_token(email: str) -> str:
+def create_password_reset_token(
+    email: str,
+    hashed_password: str,
+) -> str:
     return create_token(
         data={
             "email": email,
             "type": "password_reset",
+            "password_fingerprint": (
+                password_fingerprint(
+                    hashed_password
+                )
+            ),
         },
         expires_delta=timedelta(hours=1),
     )
 
 
-def create_access_token(email: str) -> str:
+def create_access_token(
+    email: str,
+) -> str:
     return create_token(
         data={
             "sub": email,
@@ -86,7 +111,9 @@ def create_access_token(email: str) -> str:
     )
 
 
-def create_account_deletion_token(email: str) -> str:
+def create_account_deletion_token(
+    email: str,
+) -> str:
     return create_token(
         data={
             "email": email,

@@ -11,6 +11,7 @@ from utils.jwt import (
     create_password_reset_token,
     create_verification_token,
     decode_token,
+    password_fingerprint,
 )
 
 
@@ -165,7 +166,8 @@ def forgot_password(
 
     if user and user.is_verified:
         token = create_password_reset_token(
-            user.email
+            user.email,
+            user.hashed_password,
         )
 
         send_password_reset_email(
@@ -208,6 +210,26 @@ def reset_password(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
+        )
+
+    token_password_fingerprint = payload.get(
+        "password_fingerprint"
+    )
+
+    current_password_fingerprint = password_fingerprint(
+        user.hashed_password
+    )
+
+    if (
+        not isinstance(token_password_fingerprint, str)
+        or token_password_fingerprint
+        != current_password_fingerprint
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=(
+                "Password reset token is no longer valid"
+            ),
         )
 
     hashed_password = bcrypt.hashpw(
