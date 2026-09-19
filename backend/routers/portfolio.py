@@ -732,12 +732,14 @@ def remove_stock_from_portfolio(
             detail="User not found",
         )
 
+    normalized_symbol = symbol.upper()
+
     portfolio_entry = (
         db.query(PortfoliosTable)
         .filter(
             PortfoliosTable.user_id == user.id,
             PortfoliosTable.stock_symbol
-            == symbol.upper(),
+            == normalized_symbol,
         )
         .first()
     )
@@ -748,12 +750,39 @@ def remove_stock_from_portfolio(
             detail="Stock not found in portfolio",
         )
 
-    db.delete(portfolio_entry)
-    db.commit()
+    try:
+        (
+            db.query(StockDataCache)
+            .filter(
+                StockDataCache.user_id == user.id,
+                StockDataCache.stock_symbol
+                == normalized_symbol,
+            )
+            .delete(
+                synchronize_session=False
+            )
+        )
+
+        db.delete(portfolio_entry)
+        db.commit()
+
+    except Exception as exc:
+        db.rollback()
+
+        print(
+            "Failed to remove stock "
+            f"{normalized_symbol} "
+            f"for user {user.email}: {exc}"
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to remove stock from portfolio",
+        )
 
     return {
         "message": (
-            f"Stock {symbol.upper()} "
+            f"Stock {normalized_symbol} "
             "removed from portfolio"
         )
     }
