@@ -4,8 +4,16 @@ from sqlalchemy.orm import Session
 
 from cruds import users as user_crud
 from database import get_db
-from schemas import EmailSchema, PasswordResetRequest, UserLogin, UserSignup
-from utils.email import send_password_reset_email, send_verification_email
+from schemas import (
+    EmailSchema,
+    PasswordResetRequest,
+    UserLogin,
+    UserSignup,
+)
+from utils.email import (
+    send_password_reset_email,
+    send_verification_email,
+)
 from utils.jwt import (
     create_access_token,
     create_password_reset_token,
@@ -15,7 +23,10 @@ from utils.jwt import (
 )
 
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+)
 
 
 @router.post("/signup")
@@ -23,14 +34,20 @@ def signup(
     user: UserSignup,
     db: Session = Depends(get_db),
 ):
-    if user_crud.get_user_by_email(db, user.email):
+    if user_crud.get_user_by_email(
+        db,
+        user.email,
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User already exists",
         )
 
     try:
-        db_user = user_crud.create_user(db, user)
+        db_user = user_crud.create_user(
+            db,
+            user,
+        )
 
         token = create_verification_token(
             db_user.email
@@ -51,12 +68,15 @@ def signup(
         db.rollback()
 
         print(
-            "Failed to create user because the verification "
-            f"email could not be sent: {exc}"
+            "Failed to create user because the "
+            "verification email could not be sent: "
+            f"{exc}"
         )
 
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            status_code=(
+                status.HTTP_503_SERVICE_UNAVAILABLE
+            ),
             detail=(
                 "Unable to send verification email. "
                 "Please try again later."
@@ -66,7 +86,8 @@ def signup(
     return {
         "message": (
             "User created successfully. "
-            "Please check your email to verify your account."
+            "Please check your email to verify "
+            "your account."
         )
     }
 
@@ -113,6 +134,57 @@ def login(
         "access_token": access_token,
         "token_type": "bearer",
     }
+
+
+@router.post("/resend-verification")
+def resend_verification(
+    credentials: UserLogin,
+    db: Session = Depends(get_db),
+):
+    generic_response = {
+        "message": (
+            "If the account exists, is unverified, "
+            "and the password is correct, a new "
+            "verification email will be sent."
+        )
+    }
+
+    user = user_crud.get_user_by_email(
+        db,
+        credentials.email,
+    )
+
+    if not user:
+        return generic_response
+
+    password_matches = bcrypt.checkpw(
+        credentials.password.encode("utf-8"),
+        user.hashed_password.encode("utf-8"),
+    )
+
+    if (
+        not password_matches
+        or user.is_verified
+    ):
+        return generic_response
+
+    try:
+        token = create_verification_token(
+            user.email
+        )
+
+        send_verification_email(
+            user.email,
+            token,
+        )
+
+    except Exception as exc:
+        print(
+            "Verification email could not be resent "
+            f"for {user.email}: {exc}"
+        )
+
+    return generic_response
 
 
 @router.get("/verify-email")
@@ -174,7 +246,10 @@ def forgot_password(
         email_data.email,
     )
 
-    if not user or not user.is_verified:
+    if (
+        not user
+        or not user.is_verified
+    ):
         return generic_response
 
     try:
@@ -189,8 +264,6 @@ def forgot_password(
         )
 
     except Exception as exc:
-        # Do not reveal email-delivery failures to the caller,
-        # because doing so could reveal whether an account exists.
         print(
             "Password reset email could not be sent "
             f"for {user.email}: {exc}"
@@ -232,8 +305,10 @@ def reset_password(
         "password_fingerprint"
     )
 
-    current_password_fingerprint = password_fingerprint(
-        user.hashed_password
+    current_password_fingerprint = (
+        password_fingerprint(
+            user.hashed_password
+        )
     )
 
     if (
@@ -247,7 +322,8 @@ def reset_password(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=(
-                "Password reset token is no longer valid"
+                "Password reset token "
+                "is no longer valid"
             ),
         )
 
