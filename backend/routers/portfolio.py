@@ -1,6 +1,7 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from cruds import users as user_crud
@@ -697,9 +698,34 @@ def add_stock_to_portfolio(
         stock_symbol=stock.stock_symbol,
     )
 
-    db.add(new_entry)
-    db.commit()
-    db.refresh(new_entry)
+    try:
+        db.add(new_entry)
+        db.commit()
+        db.refresh(new_entry)
+
+    except IntegrityError:
+        db.rollback()
+
+        existing_after_rollback = (
+            db.query(PortfoliosTable)
+            .filter(
+                PortfoliosTable.user_id == user.id,
+                PortfoliosTable.stock_symbol
+                == stock.stock_symbol,
+            )
+            .first()
+        )
+
+        if existing_after_rollback:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Stock already in portfolio",
+            )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to add stock to portfolio",
+        )
 
     return {
         "message": (
