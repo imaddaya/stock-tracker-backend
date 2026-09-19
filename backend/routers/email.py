@@ -126,7 +126,7 @@ def set_email_reminder(
         )
 
 
-@router.get("/send-summary")
+@router.post("/send-summary")
 def send_email_summary(
     db: Session = Depends(get_db),
     current_user_email: str = Depends(
