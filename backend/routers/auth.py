@@ -187,7 +187,7 @@ def resend_verification(
     return generic_response
 
 
-@router.get("/verify-email")
+@router.post("/verify-email")
 def verify_email(
     token: str,
     db: Session = Depends(get_db),
