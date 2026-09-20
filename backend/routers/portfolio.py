@@ -494,6 +494,21 @@ def get_stock_summary(
 
     normalized_symbol = symbol.upper()
 
+    portfolio_entry = (
+        db.query(PortfoliosTable)
+        .filter(
+            PortfoliosTable.user_id == user.id,
+            PortfoliosTable.stock_symbol
+            == normalized_symbol,
+        )
+        .first()
+    )
+    if not portfolio_entry:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Stock not found in your portfolio",
+        )
+
     stock = (
         db.query(StocksTable)
         .filter(
