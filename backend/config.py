@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
 
+    API_KEY_ENCRYPTION_KEY: str
+
     DATABASE_URL: str
 
     FRONTEND_URL: str = "http://127.0.0.1:3000"

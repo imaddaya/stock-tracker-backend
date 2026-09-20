@@ -15,6 +15,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from database import Base
+from utils.crypto import EncryptedText
 
 
 class UsersTable(Base):
@@ -43,7 +44,7 @@ class UsersTable(Base):
     )
 
     alpha_vantage_api_key: Mapped[str] = mapped_column(
-        String(128),
+        EncryptedText(),
         nullable=False,
     )
 

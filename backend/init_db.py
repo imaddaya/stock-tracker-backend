@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from database import Base, SessionLocal, engine
 from models import StocksTable
+from utils.crypto import encrypt_secret, is_encrypted_secret
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -17,6 +18,58 @@ def create_schema() -> None:
     Base.metadata.create_all(bind=engine)
 
     print("Database schema is ready.")
+
+
+def encrypt_existing_user_api_keys() -> None:
+    print("Checking stored Alpha Vantage API key encryption...")
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                ALTER TABLE users_table
+                ALTER COLUMN alpha_vantage_api_key TYPE TEXT
+                """
+            )
+        )
+
+        rows = connection.execute(
+            text(
+                """
+                SELECT id, alpha_vantage_api_key
+                FROM users_table
+                """
+            )
+        ).mappings().all()
+
+        migrated = 0
+
+        for row in rows:
+            stored_key = row["alpha_vantage_api_key"]
+
+            if not stored_key or is_encrypted_secret(stored_key):
+                continue
+
+            connection.execute(
+                text(
+                    """
+                    UPDATE users_table
+                    SET alpha_vantage_api_key = :encrypted_key
+                    WHERE id = :user_id
+                    """
+                ),
+                {
+                    "encrypted_key": encrypt_secret(stored_key),
+                    "user_id": row["id"],
+                },
+            )
+
+            migrated += 1
+
+    print(
+        "API key encryption is ready: "
+        f"{migrated} existing key(s) encrypted."
+    )
 
 
 def enforce_user_stock_uniqueness() -> None:
@@ -286,6 +339,7 @@ def seed_stock_catalog() -> None:
 
 def init_database() -> None:
     create_schema()
+    encrypt_existing_user_api_keys()
     enforce_user_stock_uniqueness()
     seed_stock_catalog()
 
