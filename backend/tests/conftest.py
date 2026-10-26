@@ -20,7 +20,7 @@ os.environ.update(
     JWT_SECRET="isolated-api-test-secret-never-use-in-production",
     API_KEY_ENCRYPTION_KEY=Fernet.generate_key().decode(),
 )
-from database import Base, get_db
+from database import Base, get_db, normalize_database_url
 from main import app
 from models import UsersTable
 from utils.jwt import create_access_token
@@ -34,7 +34,7 @@ def db():
         if url.startswith("sqlite")
         else {}
     )
-    engine = create_engine(url, **kwargs)
+    engine = create_engine(normalize_database_url(url), **kwargs)
     if url.startswith("sqlite"):
 
         @event.listens_for(engine, "connect")

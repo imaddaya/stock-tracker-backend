@@ -31,6 +31,8 @@ PowerShell: `Copy-Item .env.example .env`. Edit `.env` locally:
 
 URL-encode reserved characters in database passwords used in URLs. Keep `.env` and real credentials out of Git and chat.
 
+Use `postgresql+psycopg2://` to select the installed driver explicitly. Legacy `postgresql://` URLs are normalized to it so existing configuration continues to work after SQLAlchemy's default-driver change. Explicit driver URLs and SQLite URLs are preserved. CI exercises the legacy PostgreSQL form against its test database.
+
 ## Docker setup
 
 From `backend/`, with `.env` completed:
