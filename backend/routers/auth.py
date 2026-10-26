@@ -108,6 +108,9 @@ def login(
             detail="Invalid email or password",
         )
 
+    if len(user.password.encode("utf-8")) > 72:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
+
     password_matches = bcrypt.checkpw(
         user.password.encode("utf-8"),
         db_user.hashed_password.encode("utf-8"),
@@ -155,6 +158,9 @@ def resend_verification(
     )
 
     if not user:
+        return generic_response
+
+    if len(credentials.password.encode("utf-8")) > 72:
         return generic_response
 
     password_matches = bcrypt.checkpw(

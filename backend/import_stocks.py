@@ -1,47 +1,47 @@
-import requests
+"""Refresh stock listings without deleting portfolio-linked records."""
+
 import csv
-import os
-from sqlalchemy.orm import Session
-from models import StocksTable
-from database import SessionLocal
+import io
+import httpx
+from config import get_settings
+from init_db import STOCK_LIST_FILE, seed_stock_catalog
 
-ALPHA_VANTAGE_API_KEY = os.environ["ALPHA_VANTAGE_API_KEY"]
-URL = f"https://www.alphavantage.co/query?function=LISTING_STATUS&apikey={ALPHA_VANTAGE_API_KEY}"
-
-# Get the absolute path to this script's directory
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CSV_FILE = os.path.join(BASE_DIR, "listing_status.csv")
 
 def download_csv():
-    response = requests.get(URL)
-    if response.status_code == 200:
-        with open(CSV_FILE, "w", newline="") as f:
-            f.write(response.text)
-        print("✅ CSV downloaded.")
-    else:
-        print("❌ Failed to download CSV.")
+    key = get_settings().ALPHA_VANTAGE_API_KEY
+    if not key:
+        raise ValueError(
+            "Set ALPHA_VANTAGE_API_KEY before refreshing the stock catalog"
+        )
+    response = httpx.get(
+        "https://www.alphavantage.co/query",
+        params={"function": "LISTING_STATUS", "apikey": key},
+        timeout=30,
+    )
+    response.raise_for_status()
+    reader = csv.DictReader(io.StringIO(response.text.lstrip("\ufeff")))
+    if not {"symbol", "name", "status"}.issubset(reader.fieldnames or []):
+        raise ValueError(
+            "Provider did not return a stock listing CSV; the existing file was preserved"
+        )
+    rows = list(reader)
+    if not any(
+        row.get("status", "").strip().lower() == "active"
+        and row.get("symbol", "").strip()
+        and row.get("name", "").strip()
+        for row in rows
+    ):
+        raise ValueError("No active stocks returned; the existing file was preserved")
+    temporary = STOCK_LIST_FILE.with_suffix(".csv.tmp")
+    temporary.write_text(response.text, encoding="utf-8")
+    temporary.replace(STOCK_LIST_FILE)
+    return STOCK_LIST_FILE
+
 
 def import_csvfile_to_db():
-    db: Session = SessionLocal()
-    db.query(StocksTable).delete()  # Clear old records
+    seed_stock_catalog()
 
-    with open(CSV_FILE, newline="") as csvfile:
-        reader = csv.DictReader(csvfile)
-        for row in reader:
-            if row["status"].lower() == "active":
-                stock = StocksTable(
-                    stock_symbol=row["symbol"],
-                    stock_company_name=row["name"],
-                    is_listed=True
-                )
-                db.add(stock)
-
-    db.commit()
-    db.close()
-    print("✅ Database updated.")
 
 if __name__ == "__main__":
-    if os.path.exists(CSV_FILE):
-        os.remove(CSV_FILE)
     download_csv()
     import_csvfile_to_db()

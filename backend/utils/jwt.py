@@ -2,7 +2,8 @@ import hashlib
 from datetime import datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
-from jose import ExpiredSignatureError, JWTError, jwt
+import jwt
+from jwt import ExpiredSignatureError, InvalidTokenError
 
 from config import get_settings
 
@@ -43,6 +44,7 @@ def decode_token(
             token,
             settings.JWT_SECRET,
             algorithms=[settings.JWT_ALGORITHM],
+            options={"require": ["exp", "type"]},
         )
 
     except ExpiredSignatureError:
@@ -51,7 +53,7 @@ def decode_token(
             detail="Token expired",
         )
 
-    except JWTError:
+    except InvalidTokenError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token",

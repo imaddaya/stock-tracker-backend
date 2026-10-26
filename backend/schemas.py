@@ -11,6 +11,9 @@ from pydantic import (
 
 
 def validate_password_strength(password: str) -> str:
+    if len(password.encode("utf-8")) > 72:
+        raise ValueError("Password must be at most 72 UTF-8 bytes")
+
     if len(password) < 8:
         raise ValueError(
             "Password must be at least 8 characters long"

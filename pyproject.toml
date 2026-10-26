@@ -2,11 +2,8 @@
 name = "stock-tracker-backend"
 version = "1.0.0"
 description = "FastAPI backend for a stock portfolio tracker with authentication, market data, caching, and scheduled email summaries."
-authors = [
-    { name = "Imad Daya" }
-]
+authors = [{ name = "Imad Daya" }]
 requires-python = ">=3.10"
-
 dependencies = [
     "bcrypt>=4.3.0",
     "cryptography>=45.0.0",
@@ -16,7 +13,10 @@ dependencies = [
     "psycopg2-binary>=2.9.0",
     "pydantic>=2.11.0",
     "pydantic-settings>=2.10.0",
-    "python-jose[cryptography]>=3.5.0",
+    "PyJWT>=2.10.0,<3",
     "sqlalchemy>=2.0.0",
     "uvicorn[standard]>=0.30.0",
 ]
+
+[dependency-groups]
+dev = ["pytest==9.1.1"]
